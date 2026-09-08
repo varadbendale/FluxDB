@@ -119,7 +119,6 @@ bool validate_default(char *default_val, int type) {
 
 
 ctree* create_parser(int row , int col  , int endrow , int end_col ){
-    ctree* treq = NULL  ; 
     char ***buf = proper_data.query ; 
     int i = row ; 
     int j = col ; 
@@ -184,7 +183,7 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
             }
 
             else if ( strcmp(buf[i][j], ";")==0 ){
-                    return node   ; 
+                    return start   ; 
             }
 
             if (strcmp(buf[i][j] , "AS ") != 0 ){
@@ -204,13 +203,26 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
 
                     braces++ ; 
                     while (braces > 0 ){
-                        ctree * tree = NULL ; 
+                        if ( buf[i][j] == NULL ) {
+                            break
+                        } ; 
+                        ctree * tree = createNode(NULL) ; 
                         int present = 0 ; 
                         if (strcmp(buf[i][j] , ")") == 0 ){
                             braces-- ; 
                             if (braces == 0 ){
                                 break ; 
                             }
+                            if ( buf[i][j+1] == NULL ){
+                                if (i+1 <= end_row){
+                                    i = i+ 1 ; 
+                                    j = 0  ; 
+                                }
+                            }
+                            else { 
+                                j++ ; 
+                            }
+                            continue ; 
                         }
 
                         if (strcmp(buf[i][j] , "(")){
@@ -219,6 +231,12 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                         int tems = 0; 
                         while (buf[i][j] != NULL && strcmp(buf[i][j]  , ',') != 0 ){
                             tems = 1 ; 
+
+                            if (strcmp(buf[i][j] , ";") == 0 ){
+                                braces = 0 ; 
+                                break ; 
+                            }
+
                             if (strcmp(buf[i][j] , ')') == 0 ){
                                 braces-- ; 
                                 if (braces == 0 ){
@@ -226,8 +244,12 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                                 }
                             }
 
+                            if (buf[i][j] == NULL ) {
+                                break ; 
+                            } ; 
+
                             if (buf[i][j] != NULL  ){
-                                if (strcmp(buf[i][j] , "INT" ) == 0 ||strcmp(buf[i][j] , "BIGINT" ) == 0 ||strcmp(buf[i][j] , "SMALLINT" ) == 0 ||strcmp(buf[i][j] , "FLOAT" ) == 0 ||strcmp(buf[i][j] , "TINYINT" ) == 0 ||strcmp(buf[i][j] , "DOUBLE" ) == 0 ||strcmp(buf[i][j] , "CHAR" ) == 0 ||strcmp(buf[i][j] , "VARCHAR" ) == 0 ||strcmp(buf[i][j] , "BOOL" ) == 0 || strcmp(buf[i][j] , "TIMESTAMP" ) == 0 || strcmp(buf[i][j] , "DATE" ) == 0 ){
+                                if (strcmp(buf[i][j] , "DECIMAL" ) == 0 || strcmp(buf[i][j] , "INT" ) == 0 ||strcmp(buf[i][j] , "BIGINT" ) == 0 ||strcmp(buf[i][j] , "SMALLINT" ) == 0 ||strcmp(buf[i][j] , "FLOAT" ) == 0 ||strcmp(buf[i][j] , "TINYINT" ) == 0 ||strcmp(buf[i][j] , "DOUBLE" ) == 0 ||strcmp(buf[i][j] , "CHAR" ) == 0 ||strcmp(buf[i][j] , "VARCHAR" ) == 0 ||strcmp(buf[i][j] , "BOOL" ) == 0 || strcmp(buf[i][j] , "TIMESTAMP" ) == 0 || strcmp(buf[i][j] , "DATE" ) == 0 ){
 
                                     if (strcmp(buf[i][j] , "INT" ) == 0 ){
                                         tree->type = INT ; 
@@ -253,6 +275,48 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                                     if (strcmp(buf[i][j] , "DOUBLE" ) == 0 ){
                                         tree->type = DOUBLE ; 
                                         tree->type_bits_count = 8 ; 
+                                    }
+                                    if (strcmp(buf[i][j] , "DECIMAL" ) == 0 ){
+                                        if ( buf[i][j+1] == NULL ){
+                                            if (i+1 <= end_row){
+                                                i = i+ 1 ; 
+                                                j = 0  ; 
+                                            }
+                                        }
+                                        else { 
+                                            j++ ; 
+                                        }
+                                        if (strcmp(buf[i][j] , ",") != 0 ){
+                                            if ( buf[i][j+1] == NULL ){
+                                                if (i+1 <= end_row){
+                                                    i = i+ 1 ; 
+                                                    j = 0  ; 
+                                                }
+                                            }
+                                            else { 
+                                                j++ ; 
+                                            }
+                                            tree->first_decimal = atoi(buf[i][j]) ; 
+                                            if ( buf[i][j+1] == NULL ){
+                                                if (i+1 <= end_row){
+                                                    i = i+ 1 ; 
+                                                    j = 0  ; 
+                                                }
+                                            }
+                                            else { 
+                                                j++ ; 
+                                            }
+                                            tree->second_decimal = atoi(buf[i][j]) ; 
+                                                if ( buf[i][j+1] == NULL ){
+                                                    if (i+1 <= end_row){
+                                                        i = i+ 1 ; 
+                                                        j = 0  ; 
+                                                    }
+                                                }
+                                                else { 
+                                                    j++ ; 
+                                                }
+                                        }
                                     }
 
                                     if (strcmp(buf[i][j] , "CHAR" ) == 0 ){
@@ -329,7 +393,7 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                                         else { 
                                             int a = 0 ; 
                                             tree->primary_key_counter = 0 ; 
-                                            while ( a < 2 ){
+                                            while ( a < 3 ){
                                                 if ( buf[i][j+1] == NULL ){
                                                     if (i+1 <= end_row){
                                                         i = i+ 1 ; 
@@ -341,7 +405,7 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                                                 }   
                                                 a++ ;
                                             }
-                                            while ( strcmp(buf[i][j] , ')') != 0 ){
+                                            while ( buf[i][j] != NULL &&  strcmp(buf[i][j] , ')') != 0 ){
                                                 tree->primary_key[tree->primary_key_counter++] = strdup(buf[i][j]) ;  
                                                 if ( buf[i][j+1] == NULL ){
                                                     if (i+1 <= end_row){
@@ -353,15 +417,13 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                                                     j++ ; 
                                                 }    
                                             }
-                                            if (tree->primary_key_counter > 0 ){
-                                                if (tree->primary_key_counter == 1 ){
-                                                    if (tree->primary_key[0] != NULL ){
-                                                        tree->comp = strdup(tree->primary_key[0] ) ; 
-                                                    }
+                                            if (col_tree->primary_key_counter == 1 ){
+                                                if (col_tree->primary_key[0] != NULL ){
+                                                    col_tree->comp = strdup(col_tree->primary_key[0] ) ; 
                                                 }
-                                                else { 
-                                                    tree->comp = "PRIMARY KEY" ; 
-                                                }
+                                            }
+                                            else if (col_tree->primary_key_counter > 1 ){
+                                                col_tree->comp = "PRIMARY KEY" ; 
                                             }
 
 
@@ -377,6 +439,7 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
 
                                         }
                                     }
+
 
                                 else  if(strcmp(buf[i][j] , UNIQUE ) == 0  ){
                                     if (present == 1 ){
@@ -413,17 +476,16 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                                         j++ ; 
                                     }
                                     
-                                    if (validate_default(buf[i][j] , tree->type)  == true ){
+                                    if (buf[i][j] != NULL && validate_default(buf[i][j] , tree->type)  == true ){
                                         tree->default = strdup(buf[i][j] ) ; 
                                     }
 
                                 }
 
                                 else if (strcmp(buf[i][j] , FOREIGN) == 0 ){
-
                                         int a = 0 ; 
                                         tree->foreign_key_counter = 0 ; 
-                                        while ( a < 2 ){
+                                        while ( a < 3 ){
                                             if ( buf[i][j+1] == NULL ){
                                                 if (i+1 <= end_row){
                                                     i = i+ 1 ; 
@@ -435,7 +497,7 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                                             }   
                                             a++ ; 
                                         }
-                                        while ( strcmp(buf[i][j] , ')') != 0 ){
+                                        while ( buf[i][j] != NULL &&  strcmp(buf[i][j] , ')') != 0 ){
                                             tree->foreign_key[tree->foreign_key_counter++] = strdup(buf[i][j]) ;  
                                             if ( buf[i][j+1] == NULL ){
                                                 if (i+1 <= end_row){
@@ -462,7 +524,7 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                                             j++ ; 
                                         }    
 
-                                        if (strcmp(buf[i][j] , "REFERENCES") == 0 ){
+                                        if (buf[i][j] != NULL && strcmp(buf[i][j] , "REFERENCES") == 0 ){
                                             if ( buf[i][j+1] == NULL ){
                                                 if (i+1 <= end_row){
                                                     i = i+ 1 ; 
@@ -496,8 +558,18 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                                                     j++ ; 
                                                 } 
 
-                                                while (strcmp(buf[i][j] , ")") != 0 ){
-                                                    temp->children[temp->num++]->comp = strdup( buf[i][j] ); 
+                                                while ( buf[i][j] != NULL && strcmp(buf[i][j] , ")") != 0 ){
+                                                    ctree * ref_col = createNode(buf[i][j]) ; 
+                                                    temp->children[temp->num++] = ref_col ; 
+                                                    if ( buf[i][j+1] == NULL ){
+                                                        if (i+1 <= end_row){
+                                                            i = i+ 1 ; 
+                                                            j = 0  ; 
+                                                        }
+                                                    }
+                                                    else { 
+                                                        j++ ; 
+                                                    } 
                                                 }
 
                                                 if ( buf[i][j+1] == NULL ){
@@ -545,9 +617,20 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                             node->children[node->num++] = tree ; 
                         }
 
-                        braces-- ; 
+                        if ( buf[i][j] != NULL && strcmp(buf[i][j] , ",") == 0 ){
+                            if ( buf[i][j+1] == NULL ){
+                                if (i+1 <= end_row){
+                                    i = i+ 1 ; 
+                                    j = 0  ; 
+                                }
+                            }
+                            else { 
+                                j++ ; 
+                            }
+                        }
                     }
                 }
+
             }
             else { 
                 node->as = select_query( i , j , end_row , end_col , pain ) ; 
@@ -556,10 +639,39 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
 
 
 
-
+            j++ ; 
         }
+        i++ ; 
+        j = 0 ; 
     }
+    return start ; 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
