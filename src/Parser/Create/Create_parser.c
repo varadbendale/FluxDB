@@ -1,14 +1,18 @@
+
+
 typedef struct Create_tree_def {
     char * comp ; 
     int type ; 
     int type_bits_count ; 
     int first_decimal ; 
     int second_decimal ; 
-    bool primary_key ; 
+    int  primary_key_counter  ; 
+    char ** primary_key ; 
     bool not_null ; 
     char *  default ; 
     bool unique ; 
-    bool foreign_key ; 
+    int  foreign_key_counter ; 
+    char ** foreign_key ; 
     char * references ; 
     int line;                 
     int col;
@@ -57,12 +61,62 @@ ctree* createNode( char* comp) {
     node->type_bits_count = 0 ; 
     node->first_decimal = 0 ; 
     node->second_decimal = 0 ; 
-    node->primary_key = false  ; 
-    node->foreign_key = false  ; 
+    node->primary_key = NULL ; 
+    node->foreign_key_counter = 0 ; 
+    node->primary_key_counter = 0 ; 
+    node->foreign_key = NULL  ; 
     node->not_null = false  ; 
     node->default = NULL  ; 
     node->unique = false  ; 
     return node;
+}
+
+bool validate_default(char *default_val, int type) {
+    switch (type) {
+        case INT:
+        case BIGINT:
+        case SMALLINT:
+        case TINYINT: {
+            int start = (default_val[0] == '-') ? 1 : 0;
+            for (int i = start; i < strlen(default_val); i++) {
+                if (!isdigit(default_val[i])){
+                    return false;
+                } 
+            }
+            return true;
+        }
+
+        case FLOAT:
+        case DOUBLE: {
+            int dots = 0;
+            int start = (default_val[0] == '-') ? 1 : 0;
+            for (int i = start; i < strlen(default_val); i++) {
+                if (default_val[i] == '.') {
+                    dots++;
+                    if (dots > 1) {
+                        return false;
+                    }
+                }
+                else if (!isdigit(default_val[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        case BOOL: {
+            return (strcmp(default_val, "true") == 0  ||strcmp(default_val, "false") == 0 ||strcmp(default_val, "1") == 0     || strcmp(default_val, "0") == 0);
+        }
+
+        case CHAR:
+        case VARCHAR:
+        case DATE:
+        case TIMESTAMP:
+            return true;
+
+        default:
+            return false;
+    }
 }
 
 
@@ -80,20 +134,20 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
             }
             if (i == row && j == col ){
                 if ( strcmp(buf[i][j], "CREATE")==0   ){
-                    if ( buf[i][j] == NULL ){
-                        if (i+1 <= end_row){
-                            i = i+ 1 ; 
-                            j = 0  ; 
+                    if ( buf[i][j+1] == NULL ){
+                            if (i+1 <= end_row){
+                                i = i+ 1 ; 
+                                j = 0  ; 
+                            }
                         }
-                    }
-                    else { 
-                        j++ ; 
-                    }
+                        else { 
+                            j++ ; 
+                    }   
                     if (strcmp(buf[i][j], "TABLE")==0 ){
                         node =  createNode("CREATE TABLE") ; 
                         start = node ; 
                         if (1){
-                            if ( buf[i][j] == NULL ){
+                            if ( buf[i][j+1] == NULL ){
                                 if (i+1 <= end_row){
                                     i = i+ 1 ; 
                                     j = 0  ; 
@@ -113,7 +167,7 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                             }
                         }
                         if (1){
-                            if ( buf[i][j] == NULL ){
+                            if ( buf[i][j+1] == NULL ){
                                 if (i+1 <= end_row){
                                     i = i+ 1 ; 
                                     j = 0  ; 
@@ -139,7 +193,7 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                 int braces = 0  ; 
                 if (strcmp(buf[i][j]  , "(") == 0 ){
                     if (1){
-                        if ( buf[i][j] == NULL ){
+                        if ( buf[i][j+1] == NULL ){
                             if (i+1 <= end_row){
                                 i = i+ 1 ; 
                                 j = 0  ; 
@@ -153,6 +207,7 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                     braces++ ; 
                     while (braces > 0 ){
                         ctree * temp = NULL ; 
+                        int present = 0 ; 
                         while (buf[i][j] != NULL && strcmp(buf[i][j]  , ',') != 0 ){
                             if (strcmp(buf[i][j] , ')') == 0 ){
                                 braces-- ; 
@@ -164,49 +219,35 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                             if (buf[i][j] != NULL  ){
                                 if (strcmp(buf[i][j] , "INT" ) == 0 ||strcmp(buf[i][j] , "BIGINT" ) == 0 ||strcmp(buf[i][j] , "SMALLINT" ) == 0 ||strcmp(buf[i][j] , "FLOAT" ) == 0 ||strcmp(buf[i][j] , "TINYINT" ) == 0 ||strcmp(buf[i][j] , "DOUBLE" ) == 0 ||strcmp(buf[i][j] , "CHAR" ) == 0 ||strcmp(buf[i][j] , "VARCHAR" ) == 0 ||strcmp(buf[i][j] , "BOOL" ) == 0 || strcmp(buf[i][j] , "TIMESTAMP" ) == 0 || strcmp(buf[i][j] , "DATE" ) == 0 ){
 
-                                if (strcmp(buf[i][j] , "INT" ) == 0 ){
-                                    tree->type = INT ; 
-                                    tree->type_bits_count = 4 ; 
-                                }
-                                if (strcmp(buf[i][j] , "BIGINT" ) == 0 ){
-                                    tree->type = BIGINT ; 
-                                    tree->type_bits_count = 8 ;     
-                                }
-                                if(strcmp(buf[i][j] , "SMALLINT" ) == 0 ){
-                                    tree->type = SMALLINT ; 
-                                    tree->type_bits_count = 2 ; 
-                                }
-                                if (strcmp(buf[i][j] , "FLOAT" ) == 0 ){
-                                    tree->type = FLOAT ; 
-                                    tree->type_bits_count = 4 ; 
-                                }
-                                if (strcmp(buf[i][j] , "TINYINT" ) == 0 ){
-                                    tree->type = TINYINT ; 
-                                    tree->type_bits_count = 1 ; 
+                                    if (strcmp(buf[i][j] , "INT" ) == 0 ){
+                                        tree->type = INT ; 
+                                        tree->type_bits_count = 4 ; 
+                                    }
+                                    if (strcmp(buf[i][j] , "BIGINT" ) == 0 ){
+                                        tree->type = BIGINT ; 
+                                        tree->type_bits_count = 8 ;     
+                                    }
+                                    if(strcmp(buf[i][j] , "SMALLINT" ) == 0 ){
+                                        tree->type = SMALLINT ; 
+                                        tree->type_bits_count = 2 ; 
+                                    }
+                                    if (strcmp(buf[i][j] , "FLOAT" ) == 0 ){
+                                        tree->type = FLOAT ; 
+                                        tree->type_bits_count = 4 ; 
+                                    }
+                                    if (strcmp(buf[i][j] , "TINYINT" ) == 0 ){
+                                        tree->type = TINYINT ; 
+                                        tree->type_bits_count = 1 ; 
 
-                                }
-                                if (strcmp(buf[i][j] , "DOUBLE" ) == 0 ){
-                                    tree->type = DOUBLE ; 
-                                    tree->type_bits_count = 8 ; 
-                                }
+                                    }
+                                    if (strcmp(buf[i][j] , "DOUBLE" ) == 0 ){
+                                        tree->type = DOUBLE ; 
+                                        tree->type_bits_count = 8 ; 
+                                    }
 
-                                if (strcmp(buf[i][j] , "CHAR" ) == 0 ){
-                                    tree->type = CHAR ; 
-                                    if ( buf[i][j] == NULL ){
-                                        if (i+1 <= end_row){
-                                            i = i+ 1 ; 
-                                            j = 0  ; 
-                                        }
-                                    }
-                                    else { 
-                                        j++ ; 
-                                    }
-                                    int num = 0 ; 
-                                    if (buf[i][j] != NULL ){
-                                        num = stoi(string(buf[i][j])) ; 
-                                    }
-                                    tree->type_bits_count = num  ; 
-                                        if ( buf[i][j] == NULL ){
+                                    if (strcmp(buf[i][j] , "CHAR" ) == 0 ){
+                                        tree->type = CHAR ; 
+                                        if ( buf[i][j+1] == NULL ){
                                             if (i+1 <= end_row){
                                                 i = i+ 1 ; 
                                                 j = 0  ; 
@@ -215,24 +256,24 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                                         else { 
                                             j++ ; 
                                         }
-                                }
-                                if (strcmp(buf[i][j] , "VARCHAR" ) == 0 ){
-                                    tree->type = VARCHAR ; 
-                                    if ( buf[i][j] == NULL ){
-                                        if (i+1 <= end_row){
-                                            i = i+ 1 ; 
-                                            j = 0  ; 
+                                        int num = 0 ; 
+                                        if (buf[i][j] != NULL ){
+                                            num = stoi(string(buf[i][j])) ; 
                                         }
+                                        tree->type_bits_count = num  ; 
+                                            if ( buf[i][j+1] == NULL ){
+                                                if (i+1 <= end_row){
+                                                    i = i+ 1 ; 
+                                                    j = 0  ; 
+                                                }
+                                            }
+                                            else { 
+                                                j++ ; 
+                                            }
                                     }
-                                    else { 
-                                        j++ ; 
-                                    }
-                                    int num = 0 ; 
-                                    if (buf[i][j] != NULL ){
-                                        num = stoi(string(buf[i][j])) ; 
-                                    }
-                                    tree->type_bits_count = num  ; 
-                                        if ( buf[i][j] == NULL ){
+                                    if (strcmp(buf[i][j] , "VARCHAR" ) == 0 ){
+                                        tree->type = VARCHAR ; 
+                                        if ( buf[i][j+1] == NULL ){
                                             if (i+1 <= end_row){
                                                 i = i+ 1 ; 
                                                 j = 0  ; 
@@ -241,36 +282,158 @@ ctree* create_parser(int row , int col  , int endrow , int end_col ){
                                         else { 
                                             j++ ; 
                                         }
-                                }
-                                if(strcmp(buf[i][j] , "BOOL" ) == 0 ){
-                                    tree->type = BOOL ; 
-                                    tree->type_bits_count = 1 ; 
-                                }
-                                if (strcmp(buf[i][j] , "DATE" ) == 0 ){
-                                    tree->type = DATE ; 
-                                    tree->type_bits_count = 4 ; 
-                                }
-                                if (strcmp(buf[i][j] , "TIMESTAMP" ) == 0 ){
-                                    tree->type = TIMESTAMP ; 
-                                    tree->type_bits_count = 8 ; 
-                                }
+                                        int num = 0 ; 
+                                        if (buf[i][j] != NULL ){
+                                            num = stoi(string(buf[i][j])) ; 
+                                        }
+                                        tree->type_bits_count = num  ; 
+                                            if ( buf[i][j+1] == NULL ){
+                                                if (i+1 <= end_row){
+                                                    i = i+ 1 ; 
+                                                    j = 0  ; 
+                                                }
+                                            }
+                                            else { 
+                                                j++ ; 
+                                            }
+                                    }
+                                    if(strcmp(buf[i][j] , "BOOL" ) == 0 ){
+                                        tree->type = BOOL ; 
+                                        tree->type_bits_count = 1 ; 
+                                    }
+                                    if (strcmp(buf[i][j] , "DATE" ) == 0 ){
+                                        tree->type = DATE ; 
+                                        tree->type_bits_count = 4 ; 
+                                    }
+                                    if (strcmp(buf[i][j] , "TIMESTAMP" ) == 0 ){
+                                        tree->type = TIMESTAMP ; 
+                                        tree->type_bits_count = 8 ; 
+                                    }
                                 }
                                 
-                                if (strcmp(buf[i][j] , PRIMARY ) == 0 || strcmp(buf[i][j] , UNIQUE ) == 0  || strcmp(buf[i][j] , NOT ) == 0  )
+                                else if (strcmp(buf[i][j] , PRIMARY ) == 0 || strcmp(buf[i][j] , UNIQUE ) == 0  || strcmp(buf[i][j] , NOT ) == 0 || strcmp(buf[i][j] , DEFAULT ) == 0  ||  strcmp(buf[i][j] , FOREIGN ) == 0  ){
+                                    if (strcmp(buf[i][j] , PRIMARY ) == 0 ){
+                                        if (present == 1 ){
+                                            tree->primary_key_counter = 1 ; 
+                                        }
+                                        else { 
+                                            int a = 0 ; 
+                                            tree->primary_key_counter = 0 ; 
+                                            while ( a < 2 ){
+                                                if ( buf[i][j+1] == NULL ){
+                                                    if (i+1 <= end_row){
+                                                        i = i+ 1 ; 
+                                                        j = 0  ; 
+                                                    }
+                                                }
+                                                else { 
+                                                    j++ ; 
+                                                }   
+                                                a++ ; 
+                                            }
+                                            while ( strcmp(buf[i][j] , ')') != 0 ){
+                                                tree->primary_key[tree->primary_key_counter++] = strdup(buf[i][j]) ;  
+                                                if ( buf[i][j+1] == NULL ){
+                                                    if (i+1 <= end_row){
+                                                        i = i+ 1 ; 
+                                                        j = 0  ; 
+                                                    }
+                                                }
+                                                else { 
+                                                    j++ ; 
+                                                }    
+                                            }
+                                            if (tree->primary_key_counter > 0 ){
+                                                if (tree->primary_key_counter == 1 ){
+                                                    if (tree->primary_key[0] != NULL ){
+                                                        tree->comp = strdup(tree->primary_key[0] ) ; 
+                                                    }
+                                                }
+                                                else { 
+                                                    tree->comp = "PRIMARY KEY" ; 
+                                                }
+                                            }
+
+
+                                            if ( buf[i][j+1] == NULL ){
+                                                if (i+1 <= end_row){
+                                                    i = i+ 1 ; 
+                                                    j = 0  ; 
+                                                }
+                                            }
+                                            else { 
+                                                j++ ; 
+                                            }    
+
+                                        }
+                                    }
+
+                                    else  if(strcmp(buf[i][j] , UNIQUE ) == 0  ){
+                                        if (present == 1 ){
+                                            tree->unique = true ; 
+                                        }
+                                    }
+
+                                    else if(strcmp(buf[i][j] , NOT )== 0 ){
+                                        if ( buf[i][j+1] == NULL ){
+                                            if (i+1 <= end_row){
+                                                i = i+ 1 ; 
+                                                j = 0  ; 
+                                            }
+                                        }
+                                        else { 
+                                            j++ ; 
+                                        } 
+                                        if (strcmp(buf[i][j] , NULL )== 0){
+                                            if (present == 1 ){
+                                                tree->not_null = true ; 
+                                            }
+
+                                        }
+                                    }
+
+                                    else if (strcmp(buf[i][j] , DEFAULT ) == 0 ){
+                                        if ( buf[i][j+1] == NULL ){
+                                            if (i+1 <= end_row){
+                                                i = i+ 1 ; 
+                                                j = 0  ; 
+                                            }
+                                        }
+                                        else { 
+                                            j++ ; 
+                                        }
+                                        
+                                        if (validate_default(buf[i][j] , tree->type)  == true ){
+                                            tree->default = strdup(buf[i][j] ) ; 
+                                        }
+
+                                    }
+
+                                    else if (strcmp(buf[i][j] , FOREIGN) == 0 ){
+
+                                    }
+
+
+                                }
+
+                                else  {
+                                    tree->comp = strdup(buf[i][j]) ; 
+                                    present = 1 ; 
+                                }
                             }
 
 
 
                             if (1){
-                                if ( buf[i][j] == NULL ){
-                                    if (i+1 <= end_row){
-                                        i = i+ 1 ; 
-                                        j = 0  ; 
+                                if ( buf[i][j+1] == NULL ){
+                                        if (i+1 <= end_row){
+                                            i = i+ 1 ; 
+                                            j = 0  ; 
+                                        }
                                     }
-                                }
-                                else { 
-                                    j++ ; 
-                                }
+                                    else { 
+                                        j++ ; 
+                                    }   
                             }
 
                         }
