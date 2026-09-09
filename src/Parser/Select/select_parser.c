@@ -1,35 +1,4 @@
-typedef struct Tree_def {
-    char* comp; 
-    struct Tree_def** children;   
-    char* as  ; 
-    char **direction  ; 
-    int line;                 
-    int col;
-    int num  ; 
-} Tree_def;
-
-typedef Tree_def tree  ; 
-
-tree* createNode( char* comp) {
-    tree* node = malloc(sizeof(tree));
-    if (node == NULL) {
-        return NULL;   
-    }
-    if( comp != NULL  ){
-        node->comp = strdup(comp) ; 
-    }
-    else { 
-        node->comp = NULL ; 
-    }
-    node->as = NULL ; 
-    node->children = calloc(300, sizeof(tree*));
-    
-    node->direction = NULL ;  
-    node->num = 0  ; 
-    node->col = 0 ; 
-    node->line = 0 ; 
-    return node;
-}
+#include Parser.h 
 
 char *SQL_functions[] = {
   "COUNT", "SUM", "AVG", "MIN", "MAX", "STDDEV", "VARIANCE",
@@ -99,21 +68,7 @@ bool if_sql_syntax( char* word ){
 	return false ; 
 }
 
-Tree_def* make_leaf(char* value , int row , int col ) {
-    Tree_def* n = malloc(sizeof(Tree_def));
-    if (n == NULL) {
-        return NULL;   
-    }
-    if ( value != NULL ){
-      n->comp = strdup(value);
-    }
-    n->as = NULL;
-    n->children[300] = NULL;
-    n->direction = NULL ; 
-    n->line = row ; 
-    n->col = col;
-    return n;
-}
+
 
 
 int priority(char *string){
@@ -4315,11 +4270,6 @@ tree *comp_3(char*** buf , tree * node  ,  int i , int j , int end_row , int end
 }
  
  
-
-
-
-
-
 
 tree * select_query( int row , int col , int check , int end_row , int end_col , int pain){
          int compulsion = 0 ; 
