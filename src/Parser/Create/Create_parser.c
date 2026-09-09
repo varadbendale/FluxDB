@@ -1,41 +1,4 @@
-typedef struct Create_tree_def {
-    char * comp ; 
-    int type ; 
-    int type_bits_count ; 
-    int first_decimal ; 
-    int second_decimal ; 
-    int  primary_key_counter  ; 
-    char ** primary_key ; 
-    bool not_null ; 
-    char *  default_val ; 
-    bool unique ; 
-    int  foreign_key_counter ; 
-    char ** foreign_key ; 
-    int references ; 
-    int line;                 
-    int col;
-    struct Create_tree_def** children;   
-    int num ; 
-    tree * as ; 
-}ctree
-
-
-
-enum type_of_cols {
-    INT  = 50 ,    
-    BIGINT ,  
-    SMALLINT,   
-    TINYINT,     
-    FLOAT,      
-    DOUBLE ,     
-    CHAR ,  
-    VARCHAR, 
-    BOOL ,
-    DATE ,
-    TIMESTAMP 
-} ;
-
-
+#include Parser.h 
 
 ctree* createNode( char* comp) {
     ctree* node = malloc(sizeof(ctree));
@@ -117,10 +80,28 @@ bool validate_default(char *default_val, int type) {
 }
 
 
-ctree* create_parser(int row , int col  , int end_row , int end_col ){
+ctree* create_parser(){
     char ***buf = proper_data.query ; 
-    int i = row ; 
-    int j = col ; 
+    int row = 0  ; 
+    int col = 0 ; 
+    int i = 0 ; 
+    int j = 0  ; 
+    int check = 0 ; 
+    int max = 0 ; 
+    while (buf[i][0] != NULL ){
+        j = 0 ; 
+        while (buf[i][j] != NULL ){
+            j++ ; 
+        }
+        if (j > max ){
+            max = j ; 
+        }
+        i++ ; 
+    }
+    end_row  = i ; 
+    end_col = j ; 
+    i = row ; 
+    j = col ; 
     ctree * start = NULL ; 
     ctree * node = NULL ;
     while ( i <= end_row ){
@@ -642,16 +623,6 @@ ctree* create_parser(int row , int col  , int end_row , int end_col ){
     }
     return start ; 
 }
-
-
-
-
-
-
-
-
-
-
 
 
 
