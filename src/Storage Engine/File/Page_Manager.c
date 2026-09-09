@@ -21,6 +21,19 @@ void read(int fd, int page_num, uint8_t *buf) {
     }
 }
 
+
+void write_pagezero(pagezero * pg, const char * filename){
+    FILE * fp = fopen(filename, "wb");
+    fwrite(pg, sizeof(pagezero), 1, fp);
+    fclose(fp);
+}
+
+void read_pagezero(pagezero * pg, const char * filename){
+    FILE * fp = fopen(filename, "rb");
+    fread(pg, sizeof(pagezero), 1, fp);
+    fclose(fp);
+}
+
 void close(int fd) {
     close(fd);
 }
