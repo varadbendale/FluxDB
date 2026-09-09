@@ -80,16 +80,6 @@ void take_care_of_stuff(ctree * tree , info * intel){
     }
 }
 
-void do_the_foreign_key(ctree * tree  , table_info * ti ){
-    int i = 0 ; 
-    while ( i < tree->foreign_key_counter ){
-        column_info * temp ; 
-        temp->col_name = strdup(tree->foreign_key[i]) ; 
-        temp->foreign_key_table  = strdup(tree->children[tree->num - 1 ]) ; 
-        temp->foreign_key_column = strdup(tree->children[tree->num - 1 ]->children[i]->comp)  ; 
-        ti->columns[ti->num_columns++] = temp ; 
-    }
-} 
 
 void do_the_foreign_key(ctree * tree, table_info * ti){
     int i = 0;
