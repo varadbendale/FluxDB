@@ -1,16 +1,3 @@
-typedef struct insert_parser_tree {
-    char *comp;
-    char *table;
-    char **table_cols;
-    char ***insert_values;
-    struct insert_parser_tree **children;   
-    int num;
-    int table_col_num;
-    int insert_val_num;
-    int ignore;
-    int replace  ; 
-} insert_parser_tree;
-
 
 insert_parser_tree *createNodeInsert(char *comp) {
     insert_parser_tree *node = malloc(sizeof(insert_parser_tree));  
@@ -154,8 +141,25 @@ itree * insert_parser(){
 
                 }
             }
+            else if ( strcmp(buf[i][j] , "SELECT" ) == 0 ){
+                // select work needs to be done  ; 
+            }
+
             else if (strcmp(buf[i][j] , "VALUES" ) == 0  ){
-                if (strcmp(buf[i][j] , "(" ) == 0  ){
+                if ( buf[i][j+1] == NULL ){
+                    if (i+1 <= end_row){
+                        i = i+ 1 ; 
+                        j = 0  ; 
+                    }
+                }
+                else { 
+                    j++ ; 
+                }  
+                if (strcmp(buf[i][j] , "SELECT" ) == 0  ){
+                    
+                }
+
+                while (strcmp(buf[i][j] , "(" ) == 0  ){
                     if ( buf[i][j+1] == NULL ){
                         if (i+1 <= end_row){
                             i = i+ 1 ; 
@@ -165,20 +169,146 @@ itree * insert_parser(){
                     else { 
                         j++ ; 
                     }  
-                    while (strcmp(buf[i][j] , ")" ) == 0 ){
-                        if (strcmp(buf[i][j] , "(" ) == 0  ){
-                            if (strcmp(buf[i][j] , "SELECT" ) == 0  ){
-                                
+                    int kim = 0 ; 
+                    while (kim < node->table_col_num ){
+                        if (1){
+                            if (strcmp(buf[i][j] , "(" ) == 0  ){
+                                if (strcmp(buf[i][j] , "SELECT" ) == 0  ){
+                                    //work on it okay 
+                                    continue ; 
+                                }
+                                else { 
+                                    //error
+                                }
+                            }
+                            else { 
+                                node->children[node->num++]->insert_values[kim] = strdup(buf[i][j]) ; 
+                            }
+                        }
+                        if ( buf[i][j+1] == NULL ){
+                            if (i+1 <= end_row){
+                                i = i+ 1 ; 
+                                j = 0  ; 
                             }
                         }
                         else { 
-
+                            j++ ; 
+                        }  
+                        if (strcmp(buf[i][j] , ",") == 0 ){
+                            if ( buf[i][j+1] == NULL ){
+                                if (i+1 <= end_row){
+                                    i = i+ 1 ; 
+                                    j = 0  ; 
+                                }
+                            }
+                            else { 
+                                j++ ; 
+                            }  
                         }
-
+                        kim++ ; 
+                    }
+                    if (strcmp(buf[i][j] , ")") == 0 ){
+                        if ( buf[i][j+1] == NULL ){
+                            if (i+1 <= end_row){
+                                i = i+ 1 ; 
+                                j = 0  ; 
+                            }
+                        }
+                        else { 
+                            j++ ; 
+                        }  
+                    }
+                    if (strcmp(buf[i][j] , ",") == 0 ){
+                        if ( buf[i][j+1] == NULL ){
+                            if (i+1 <= end_row){
+                                i = i+ 1 ; 
+                                j = 0  ; 
+                            }
+                        }
+                        else { 
+                            j++ ; 
+                        }  
                     }
                 }
             }
+            else if (strcmp(buf[i][j] , "ON") == 0 ){
+                if ( buf[i][j+1] == NULL ){
+                    if (i+1 <= end_row){
+                        i = i+ 1 ; 
+                        j = 0  ; 
+                    }
+                }
+                else { 
+                    j++ ; 
+                }  
+                if (strcmp(buf[i][j] , "DUPLICATE") == 0 ){
+                    if ( buf[i][j+1] == NULL ){
+                        if (i+1 <= end_row){
+                            i = i+ 1 ; 
+                            j = 0  ; 
+                        }
+                    }
+                    else { 
+                        j++ ; 
+                    }   
+                    if (strcmp(buf[i][j] , "KEY") == 0 ){
+                        if ( buf[i][j+1] == NULL ){
+                            if (i+1 <= end_row){
+                                i = i+ 1 ; 
+                                j = 0  ; 
+                            }
+                        }
+                        else { 
+                            j++ ; 
+                        }  
+                        if (strcmp(buf[i][j] , "UPDATE") == 0 ){
+                            if ( buf[i][j+1] == NULL ){
+                                if (i+1 <= end_row){
+                                    i = i+ 1 ; 
+                                    j = 0  ; 
+                                }
+                            }
+                            else { 
+                                j++ ; 
+                            }  
+                            node->children[node->num++] = createNodeInsert("ON DUPLICATE KEY UPDATE") ; 
+                            
+                        }
+                    }
+                    else { 
+                        //error 
+                    }
+                }
+                else { 
+                    //error ; 
+                }
+            }
+            else if (strcmp(buf[i][j] , "RETURNING") == 0 ){
+                node->children[node->num++] = strdup("RETURNING") ; 
+                node = node->children[node->num -1 ] ; 
+                if ( buf[i][j+1] == NULL ){
+                    if (i+1 <= end_row){
+                        i = i+ 1 ; 
+                        j = 0  ; 
+                    }
+                }
+                else { 
+                    j++ ; 
+                }  
+                while (strcmp(buf[i][j] , ";") == 0 ){
+                    node->children[node->num++] = createNodeInsert(buf[i][j]) ; 
+                    if ( buf[i][j+1] == NULL ){
+                        if (i+1 <= end_row){
+                            i = i+ 1 ; 
+                            j = 0  ; 
+                        }
+                    }
+                    else { 
+                        j++ ; 
+                    }  
+                }
 
+            }
 
         }
     }
