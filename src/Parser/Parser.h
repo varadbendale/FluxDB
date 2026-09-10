@@ -26,6 +26,30 @@ typedef struct Create_tree_def {
 }ctree
 
 
+typedef struct insert_parser_tree {
+    char *comp;
+    char *table;
+    char **table_cols;
+    char ***insert_values;
+    struct insert_parser_tree **children;   
+    int num;
+    int table_col_num;
+    int insert_val_num;
+    int ignore;
+    int replace  ; 
+} insert_parser_tree;
+
+
+
+
+typedef struct Create_tree_def {
+    char *  default_val ; 
+    int  foreign_key_counter ; 
+    char ** foreign_key ; 
+}ctree
+
+
+
 
 enum type_of_cols {
     INT  = 50 ,    
@@ -53,26 +77,6 @@ typedef struct Tree_def {
 
 typedef Tree_def tree  ; 
 
-tree* createNode( char* comp) {
-    tree* node = malloc(sizeof(tree));
-    if (node == NULL) {
-        return NULL;   
-    }
-    if( comp != NULL  ){
-        node->comp = strdup(comp) ; 
-    }
-    else { 
-        node->comp = NULL ; 
-    }
-    node->as = NULL ; 
-    node->children = calloc(300, sizeof(tree*));
-    
-    node->direction = NULL ;  
-    node->num = 0  ; 
-    node->col = 0 ; 
-    node->line = 0 ; 
-    return node;
-}
 
 Tree_def* make_leaf(char* value , int row , int col ) {
     Tree_def* n = malloc(sizeof(Tree_def));
@@ -101,34 +105,6 @@ tree *comp_2(char*** buf , tree * node  ,  int i , int j , int end_row , int end
 tree *comp_3(char*** buf , tree * node  ,  int i , int j , int end_row , int end_col  , int pain  , int having ) ; 
 tree * select_query( int row , int col , int check , int end_row , int end_col , int pain) ; 
 
-
-typedef struct {
-    uint32_t db_magic ; 
-    uint16_t version ; 
-    uint16_t page_size ; 
-    uint32_t num_tables ; 
-    table_info tables[300] ; 
-}pagezero ; 
-
-typedef struct{
-    char *table_name;     
-    uint32_t num_columns;        
-    uint64_t root_page;        
-    ColumnDef columns[16];       
-}table_info ; 
-
-typedef struct{
-    char *col_name ;   
-    uint8_t col_type;       
-    int type_bits_count ; 
-    int first_decimal ; 
-    int second_decimal ;   
-    bool primary_key ; 
-    bool not_null ; 
-    char  *default_val ;     
-    char foreign_key_table ;   
-    char foreign_key_column ;  
-}column_info ; 
 
 
 ctree* createNode( char* comp)  ; 
