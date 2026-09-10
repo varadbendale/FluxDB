@@ -70,6 +70,28 @@ bool if_sql_syntax( char* word ){
 
 
 
+tree* createNode( char* comp) {
+    tree* node = malloc(sizeof(tree));
+    if (node == NULL) {
+        return NULL;   
+    }
+    if( comp != NULL  ){
+        node->comp = strdup(comp) ; 
+    }
+    else { 
+        node->comp = NULL ; 
+    }
+    node->as = NULL ; 
+    node->children = calloc(300, sizeof(tree*));
+    
+    node->direction = NULL ;  
+    node->num = 0  ; 
+    node->col = 0 ; 
+    node->line = 0 ; 
+    return node;
+}
+
+
 
 int priority(char *string){
     if ( strcmp("CASE" , string ) == 0 ||  strcmp("ON" , string ) == 0   ){
