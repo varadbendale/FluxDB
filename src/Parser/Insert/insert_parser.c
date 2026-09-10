@@ -25,6 +25,177 @@ insert_parser_tree *createNodeInsert(char *comp) {
     return node;
 }
 
+
+
+insert_parser_tree* expression_insert(char ***buf, insert_parser_tree *node,  int i, int j, int end_row, int end_col) {
+    char *operands[300];
+    int start_row = i;
+    int start_col = j;
+    char *operators[300];
+    char *string_temp;
+    int operator_top = 0;
+    int operand_top = 0;
+    insert_parser_tree *prev_tree[300];
+    int prev_tree_top = 0;
+    int first = 0;
+
+    while (buf[i][j] != NULL && strcmp(buf[i][j], ";") != 0) {
+        if (priority(buf[i][j]) != 0) {
+            if (j + 1 <= end_col) {
+                char merged[10];
+                strcpy(merged, buf[i][j]);
+                strcat(merged, buf[i][j + 1]);
+                if (priority(merged) != 0) {
+                    string_temp = strdup(merged);
+                    j += 1;
+                } else {
+                    string_temp = strdup(buf[i][j]);
+                }
+            }
+            else {
+                string_temp = strdup(buf[i][j]);
+            }
+            if (first == 0 && j == start_col) {
+                if (i > start_row) {
+                    int size = 0;
+                    for (int k = 0; buf[i-1][k] != NULL; k++) {
+                        size++;
+                    }
+                    if (size > 0) {
+                        operands[operand_top++] = buf[i-1][size - 1];
+                    }
+                }
+                else if (i == start_row && start_col > 0) {
+                    operands[operand_top++] = buf[i][start_col - 1];
+                }
+            }
+            first = 1;
+
+            if (operator_top == 0) {
+                operators[operator_top++] = string_temp;
+            }
+            else {
+                if (priority(string_temp) <= priority(operators[operator_top - 1])) {
+                    while (operator_top > 0 && priority(string_temp) <= priority(operators[operator_top - 1])) {
+                        char *oper = operators[operator_top - 1];
+                        int num_temp = 2; 
+                        if (operand_top < num_temp) {
+                            operator_top--;
+                            continue;
+                        }
+                        insert_parser_tree *new = create_insert_node(oper);
+                        operator_top--;
+                        int pal = 0;
+                        while (pal < num_temp) {
+                            operand_top--;
+                            if (operands[operand_top] == NULL) {
+                                new->children[num_temp -1-pal] = prev_tree[--prev_tree_top];
+                            } else {
+                                new->children[num_temp-1-pal] = make_insert_leaf(operands[operand_top], i, j);
+                            }
+                            pal++;
+                        }
+                        new->num = num_temp;
+                        prev_tree[prev_tree_top++] = new;
+                        operands[operand_top] = NULL;
+                        operand_top++;
+                    }
+                    operators[operator_top++] = string_temp;
+                }
+                else {
+                    operators[operator_top++] = string_temp;
+                }
+            }
+        }
+        else {
+            if (if_function(buf[i][j]) == true) {
+                int func_start_row = i;
+                int func_start_col = j;
+                int commas = 0;
+                bool present = false;
+
+                while (i <= end_row) {
+                    while (j <= end_col) {
+                        if (strcmp(buf[i][j], "(") == 0) {
+                            commas++;
+                            present = true;
+                        }
+                        else if (strcmp(buf[i][j], ")") == 0) {
+                            commas--;
+                        }
+                        if (present && commas == 0) break;
+                        if (i >= end_row && j > end_col) break;
+                        if (buf[i][j] == NULL) {
+                            if (i + 1 < end_row) { i++; j = 0; }
+                            else break;
+                        }
+                        else { j++; }
+                    }
+                    if (present && commas == 0) break;
+                    if (i >= end_row && j > end_col) break;
+                }
+                insert_parser_tree *just_there;
+                if (prev_tree_top == 0 || prev_tree[prev_tree_top - 1] == NULL) {
+                    insert_parser_tree *func_parent = create_insert_node(NULL);
+                    just_there = function_insert(buf, func_parent, check, func_start_row, func_start_col, i, j);
+                }
+                else {
+                    just_there = function_insert(buf, prev_tree[prev_tree_top - 1], check, func_start_row, func_start_col, i, j);
+                }
+                if (just_there != NULL) {
+                    prev_tree[prev_tree_top++] = just_there;
+                    operands[operand_top++] = NULL;
+                }
+            }
+            else {
+                operands[operand_top++] = buf[i][j];
+            }
+        }
+
+        if (buf[i][j] == NULL) {
+            if (i + 1 < end_row) { i++; j = 0; }
+            else break;
+        }
+        else {
+            j++;
+        }
+    }
+    while (operator_top > 0) {
+        char *oper = operators[operator_top - 1];
+        int num_temp = 2; 
+        if (operand_top < num_temp) {
+            operator_top--;
+            continue;
+        }
+        insert_parser_tree *new = create_insert_node(oper);
+        operator_top--;
+        int pal = 0;
+        while (pal < num_temp) {
+            operand_top--;
+            if (operands[operand_top] == NULL) {
+                new->children[num_temp - 1 - pal] = prev_tree[--prev_tree_top];
+            } else {
+                new->children[num_temp - 1 - pal] = make_insert_leaf(operands[operand_top], i, j);
+            }
+            pal++;
+        }
+        new->num = num_temp;
+        prev_tree[prev_tree_top++] = new;
+        operands[operand_top] = NULL;
+        operand_top++;
+    }
+
+    insert_parser_tree *exp_tree = (prev_tree_top > 0) ? prev_tree[prev_tree_top - 1] : NULL;
+
+    if (j - 1 >= start_col) {
+        j = j - 1;
+    }
+
+    return exp_tree;
+}
+
+
+
 itree * insert_parser(){
     char ***buf = proper_data.query ; 
     int row = 0  ; 
@@ -272,7 +443,22 @@ itree * insert_parser(){
                                 j++ ; 
                             }  
                             node->children[node->num++] = createNodeInsert("ON DUPLICATE KEY UPDATE") ; 
-                            
+                            while ( strcmp(buf[i][j] , ";") != 0 ){
+                                int e = i ; 
+                                int f = j ; 
+                                while ( strcmp(buf[i][j] , ",") != 0 ){
+                                    if ( buf[i][j+1] == NULL ){
+                                        if (i+1 <= end_row){
+                                            i = i+ 1 ; 
+                                            j = 0  ; 
+                                        }
+                                    }
+                                    else { 
+                                        j++ ; 
+                                    }   
+                                }
+                                node->children[node->num++] = expression_insert(buf , e , f , i , j) ; 
+                            }
                         }
                     }
                     else { 
