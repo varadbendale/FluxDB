@@ -26,18 +26,20 @@ typedef struct Create_tree_def {
 }ctree
 
 
-typedef struct insert_parser_tree {
+typedef struct  {
     char *comp;
     char *table;
     char **table_cols;
-    char ***insert_values;
+    char **insert_values;
     struct insert_parser_tree **children;   
     int num;
     int table_col_num;
     int insert_val_num;
     int ignore;
-    int replace  ; 
-} insert_parser_tree;
+    int replace  ;
+} insert_parser_tree
+
+
 
 
 
