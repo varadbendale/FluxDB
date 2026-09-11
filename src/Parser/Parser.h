@@ -42,8 +42,6 @@ typedef struct  {
 
 
 
-
-
 typedef struct Create_tree_def {
     char *  default_val ; 
     int  foreign_key_counter ; 
@@ -112,4 +110,9 @@ tree * select_query( int row , int col , int check , int end_row , int end_col ,
 ctree* createNode( char* comp)  ; 
 bool validate_default(char *default_val, int type)  ; 
 ctree* create_parser() ; 
+
+
+insert_parser_tree *createNodeInsert(char *comp)  ; 
+insert_parser_tree* expression_insert(char ***buf, insert_parser_tree *node,  int i, int j, int end_row, int end_col) ; 
+itree * insert_parser() ; 
 
