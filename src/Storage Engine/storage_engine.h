@@ -10,10 +10,10 @@
 
 typedef struct {
     char col_name[64];
-    uint8_t  col_type;
-    int32_t  type_bits_count;
-    int32_t  first_decimal;
-    int32_t  second_decimal;
+    uint8_t col_type;
+    int32_t type_bits_count;
+    int32_t first_decimal;
+    int32_t second_decimal;
     bool primary_key;
     bool foreign_key;
     bool default_stuff;
@@ -45,6 +45,31 @@ typedef struct {
     int primary_key[307] ; 
     int pri_num ; 
 }info  ; 
+
+
+
+typedef struct acutal_values{
+    int error_handling  ; 
+    char ** info ; 
+    char ** columns ; 
+    int col_num ;  
+    itree * condition ; 
+}acutal_values 
+
+
+typedef struct info_detail{
+    char * table ; 
+    int row_num ; 
+    acutal_values **info  ; 
+}info_detail 
+
+
+typedef struct insert{
+    int table_num ; 
+    info_detail ** info ; 
+}insert_page 
+
+
 
 void default_column_info(column_info * col) ; 
 void default_table_info(table_info * ti);
