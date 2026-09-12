@@ -103,7 +103,7 @@ void main_create_parser(pagezero * pg){
     table_info ti;
     default_table_info(&ti);                                                              
     strncpy(ti.table_name, tree->comp, sizeof(ti.table_name) - 1);
-    int i     = 0;
+    int i = 0;
     info * intel;
     take_care_of_stuff(tree, intel);
     ti.num_columns = intel->num;
@@ -142,7 +142,10 @@ void main_create_parser(pagezero * pg){
         }
         if (tree->default_val != NULL){
             col.default_stuff = true;
-            strncpy(col.default_val, tree->default_val, sizeof(col.default_val) - 1);
+            if (col.unique == false ){
+                strncpy(col.default_val, tree->default_val, sizeof(col.default_val) - 1);
+            }
+
         }
         if (strcmp(tree->comp, "FOREIGN KEY") == 0){
             do_the_foreign_key(tree, &ti);
