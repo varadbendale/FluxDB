@@ -39,6 +39,9 @@ typedef struct {
     table_info tables[300];
 } pagezero;
 
+
+
+
 typedef struct {
     int hash[307] ; 
     int num ; 
@@ -51,8 +54,6 @@ typedef struct {
 typedef struct acutal_values{
     int error_handling  ; 
     char ** info ; 
-    char ** columns ; 
-    int col_num ;  
     itree * condition ; 
 }acutal_values 
 
@@ -69,6 +70,28 @@ typedef struct insert{
     info_detail ** info ; 
 }insert_page 
 
+typedef struct page_header_struct {
+    int page_num ; 
+    int page_type ; 
+    int num ; 
+    int toast_table_num ; 
+    int dead_slots[300] ; 
+    int dead_slots_size[300] ; 
+    int free_size ; 
+    int normal_free_size ; 
+}page_header_struct 
+ 
+typedef struct slots{
+    int offset ; 
+    int free_or_no ; 
+    int size ; 
+}slots 
+
+typedef struct page{
+    page_header_struct * header ; 
+    slots * slot  ; 
+    char * data ; 
+}page 
 
 
 void default_column_info(column_info * col) ; 
