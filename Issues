@@ -54,3 +54,6 @@
 18. In the bytecodes the cursor moving goes as per the btrees but after i kind of thought to go with the b + trees and then like the 
     all of the seek functions kind of are useless as they go with the stack approach and so does the cursors so all of them needs to be 
     rebuild 
+
+19. See in the bytecodes everywhere there is blob conversion or unconversion i need to add the stuff liek dates and the timestamps
+   havent quite considered them as a new thing right so eyah 
