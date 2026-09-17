@@ -7,7 +7,7 @@ Databases run the entire tech industry, yet almost no one knows how this
 wonderful piece of software actually works. This is that black box,
 rebuilt in C, piece by piece.
 
-## FluxDB Supports
+## FluxDB Currently Supports
 
 ```
 SELECT [columns | CASE ... END]
@@ -23,43 +23,6 @@ SELECT [columns | CASE ... END]
   ├── ORDER BY <columns> [ASC|DESC]
   │
   └── LIMIT <n>
-```
-
-❌ No subqueries / nested SELECTs — every query is single-pass, no nesting.
-
-## Architecture Overview
-
-```
-+----------------------------------------------------------------------+
-|                          PREPROCESSING                               |
-|                                                                      |
-|   +---------------+        +----------------------+                  |
-|   |   Tokenizer   |  --->  |   Parser (-> AST)    |                  |
-|   +---------------+        +----------+-----------+                  |
-+---------------------------------------|--------------------------------+
-                                        v
-+----------------------------------------------------------------------+
-|                         EXECUTION ENGINE                             |
-|                                                                      |
-|      +----------------------+                                        |
-|      |  Bytecode Generator  |                                        |
-|      +-----------+----------+                                        |
-|                  |                                                   |
-|                  v                                                   |
-|      +----------------------+        +------------------------+      |
-|      |    Virtual Machine   | <----> |   WHERE Clause Engine  |      |
-|      +-----------+----------+        +------------------------+      |
-|                  |                                                   |
-+------------------|----------------------------------------------------+
-                   | Read/Write rows
-                   v
-+----------------------------------------------------------------------+
-|                          STORAGE ENGINE                              |
-|                                                                      |
-|   +---------------+        +---------------+        +-----------+    |
-|   |     Pager     | <----> |    B-Tree     | <----> |  .db file |    |
-|   +---------------+        +---------------+        +-----------+    |
-+----------------------------------------------------------------------+
 ```
 
 ## Repository Structure
