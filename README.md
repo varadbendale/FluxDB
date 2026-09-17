@@ -66,19 +66,49 @@ SELECT [columns | CASE ... END]
 
 ```
 FluxDB/
-├── README.md                  # Project documentation
-├── sql.c                      # Entire code
-│
-├── Parser/
-│   ├── select_parser.c        # Tokenizing + parsing SELECT queries into AST
-│   └── Parser.txt             # Parser reference, design notes
-│
-├── Issues                     # Current issues in the code 
-│
-└── Engine/
-    ├── Engine.c               # Converts queries into bytecode
-    ├── bytecode.c             # All bytecode instruction definitions
-    └── engine.txt             # Opcode reference, VM design notes
+├── src
+│   ├── Execution Engine
+│   │   ├── Group by 
+│   │   │   └── Group_by.c
+│   │   ├── Join
+│   │   │   ├── Join.c
+│   │   │   └── Readme.md
+│   │   ├── Order by 
+│   │   │   └── Order_by.c
+│   │   ├── Engine.c
+│   │   ├── Engine.h
+│   │   └── Readme.md
+│   ├── Parser
+│   │   ├── Create
+│   │   │   └── Create_parser.c
+│   │   ├── Insert
+│   │   │   └── insert_parser.c
+│   │   ├── Select
+│   │   │   ├── Readme.md
+│   │   │   └── select_parser.c
+│   │   ├── Parser.h
+│   │   └── Readme.md
+│   ├── Repl
+│   │   └── Interface
+│   │       ├── Readme.md
+│   │       └── terminal.py
+│   ├── Storage Engine
+│   │   ├── Data in Pages
+│   │   │   ├── File Operations
+│   │   │   │   └── Page_Manager.c
+│   │   │   ├── Pages
+│   │   │   │   └── insert_pager.c
+│   │   │   └── Pages Header 
+│   │   │       ├──   Header_page.c
+│   │   │       └── Readme.md
+│   │   ├── Pager 
+│   │   │   └── FSM.c
+│   │   └── storage_engine.h
+│   └── VM Bytecodes
+│       ├── bytecode.c
+│       └── Readme.md
+├── Issues
+└── README.md
 ```
 
 ## Prerequisites
@@ -86,18 +116,4 @@ FluxDB/
 * `gcc` (or `clang`) — C compiler
 * A Linux/macOS environment — file I/O assumes POSIX-style paths
 
-## Status
-
- Work in progress. Currently supports:
-
-- [x] REPL
-- [x] Tokenizer
-- [x] SELECT query parser
-- [x] Bytecode generation
-- [x] Compilation of SELECT, FROM, WHERE, GROUP BY + HAVING, ORDER BY
-- [ ] CREATE query parser
-- [ ] Compilation of CASE, LIMIT, JOIN
-- [ ] WHERE clause engine
-- [ ] Pager
-- [ ] B-Tree (storage engine)
 
