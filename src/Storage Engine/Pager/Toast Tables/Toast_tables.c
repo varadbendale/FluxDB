@@ -26,20 +26,55 @@ void toast_tables_insert(char * data ){
     toast * tst ; 
     while ( size > 0 ){
         if (toast_header->dead_space > 0 ){
-            while ( a < toast_header->pages_used ){
-                int page_num = -1  ; 
+            int page_num = -1  ; 
+            while ( a < 128 ){
                 uint8_t temp = toast_header->dead_slots[a] ;
                 for (int j = 7; j >= 0; j--) {
                     int bit = (temp >> j) & 1;
                     if (bit == 0) {
-                        
+                        page_num = a * 8 + j ; 
                         break;
                     }
                 }
+                if (page_num != -1 ){
+                    break ; 
+                }
+                else { 
+                    a++ ; 
+                }
+            }
+            if (page_num == -1 ){
+                // error ; 
+            }
+            else { 
+               page * pg = get_page_from_file( page_num * 4096 , filename ) ; 
+                int i = 0;
+                int j = 0;
+                int k = 0;
+                int where_to_put = -1;
+                int wonder = 0 ; 
+                int temp_slot_num = pg->slot_num / 8;
+                uint8_t temp;
+                while (i < temp_slot_num) {
+                    temp = pg->header->dead_slots[i];
+                    for (int j = 7; j >= 0; j--) {
+                        int bit = (temp >> j) & 1;
+                        if (bit == 1) {
+                            pg->slot[i*8+j].offset = wonder ; 
+                            wonder = wonder + pg->slot[i*8+j].size ; 
+                            i++  ; 
+                        }
+                        else { 
+                            i++ ; 
+                            continue ; 
+                        }
+                    }
+                }
+                int size = strlen(data)+sizeof(slots) ; 
+                int can_be_filled_size = 2752 - size ; 
+                pg->slot[pg->slot_num++].offset = wonder ; 
                 
-                page * temp = get_page_from_file()
-                a++ ; 
-                size = size - 
+
             }
         }
 
