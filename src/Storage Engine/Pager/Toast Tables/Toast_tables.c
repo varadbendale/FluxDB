@@ -24,6 +24,7 @@ void toast_tables_insert(char * data ){
     int a = 0 ; 
     int size = strlen(data) ; 
     toast * tst ; 
+    int offset ; 
     while ( size > 0 ){
         if (toast_header->dead_space > 0 ){
             int page_num = -1  ; 
@@ -70,9 +71,30 @@ void toast_tables_insert(char * data ){
                         }
                     }
                 }
-                int size = strlen(data)+sizeof(slots) ; 
-                int can_be_filled_size = 2752 - size ; 
-                pg->slot[pg->slot_num++].offset = wonder ; 
+                pg->free_size = pg->normal_free_size ; 
+                pg->slot[pg->slot_num].offset = wonder ; 
+                if (size + sizeof(slot) > pg->free_size ){
+                    if (size + sizeof(slot) - pg->free_size < 48 ){
+                        memcpy(pg->data + wonder , data + offset  , size ) ; 
+                        pg->slot[pg->slot_num].size = size ; 
+                        pg->free_size = pg->free_size  - size  ; 
+                        size  = 0 ; 
+                    }
+                    else { 
+                        memcpy(pg->data + wonder , data + offset  , pg->free_size  ) ; 
+                        size = size - pg->free_size ; 
+                        pg->slot[pg->slot_num].size = pg->free_size ; 
+                        offset = offset + pg->free_size ; 
+                        pg->free_size = 0  ; 
+                        pg->slot_num++ ; 
+                    }
+                }
+                else{
+                    memcpy(pg->data + wonder , data + offset  , size ) ; 
+                    pg->slot[pg->slot_num].size = size ; 
+                    pg->free_size = pg->free_size  - size  ; 
+                    size  = 0 ; 
+                }
                 
 
             }
