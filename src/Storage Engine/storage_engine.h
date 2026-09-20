@@ -8,6 +8,13 @@
 
 #define PAGE_SIZE 4096 
 
+enum page_types{
+    toast = 120 ,
+    normal , 
+    hash
+} ; 
+
+
 typedef struct {
     char col_name[64];
     uint8_t col_type;
@@ -40,8 +47,6 @@ typedef struct {
 } pagezero;
 
 
-
-
 typedef struct {
     int hash[307] ; 
     int num ; 
@@ -68,30 +73,57 @@ typedef struct info_detail{
 typedef struct insert{
     int table_num ; 
     info_detail ** info ; 
-}insert_page 
+}insert 
 
 typedef struct page_header_struct {
     int page_num ; 
     int page_type ; 
     int num ; 
     int toast_table_num ; 
-    int dead_slots[300] ; 
-    int dead_slots_size[300] ; 
+    uint8_t dead_slots[128];
+    int current_offset ; 
+    int current_size ; 
     int free_size ; 
     int normal_free_size ; 
-}page_header_struct 
+}page_header_struct
  
 typedef struct slots{
     int offset ; 
-    int free_or_no ; 
     int size ; 
+    float pk ; 
 }slots 
 
 typedef struct page{
     page_header_struct * header ; 
     slots * slot  ; 
+    int slot_num ; 
     char * data ; 
 }page 
+
+typedef struct map_out_toast{
+    int chunk_id ; 
+    int offset_of_the_same ; 
+}map_out_toast 
+
+typedef struct toast_table_file_header{
+    int pages_used ; 
+    int space_available ;
+    int total_num_of_chunks ; 
+    uint8_t dead_space_available[pages_used] ; 
+    int dead_space ; 
+    map_out_toast map[total_num_of_chunks] ; 
+}toast_table_file_header 
+
+typedef struct toast{
+    int chunk_id ; 
+    int page ; 
+    int slot_number ; 
+}toast 
+
+typedef struct toast_pointer{
+    int chunk_id ; 
+    int size ; 
+}toast_pointer
 
 
 void default_column_info(column_info * col) ; 
