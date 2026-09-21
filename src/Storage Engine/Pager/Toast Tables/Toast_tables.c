@@ -9,34 +9,50 @@ get_toast_table_file_header *get_toast_table_file_header() {
     if (bytes_read == 0) {
         return NULL;
     }
-    get_toast_table_file_header *ans = malloc(sizeof(get_toast_table_file_header));
+    toast_table_file_header *ans = malloc(sizeof(toast_table_file_header));
     if (ans == NULL) {
         return NULL;
     }
-    memcpy(ans, dat, sizeof(get_toast_table_file_header));
+    memcpy(ans, dat, sizeof(toast_table_file_header));
     return ans;
 }
 
 
 void write_toast(toast * t, long offset) {
-    FILE *file = fopen(/*filename*/, "rb");
+    FILE *file = fopen(/*filename*/, "r+b");
     if (file == NULL) {
-        return NULL;
+        return ;
     }
-    fseek(fp, offset, SEEK_SET);
-    fwrite(t, sizeof(toast), 1, fp);
+    fseek(file, offset, SEEK_SET);
+    fwrite(t, sizeof(toast), 1, file);
+    fclose(file); 
+}
+
+
+void write_toast_page( long file_offset, page *pg) {
+    FILE *fp = fopen(/*filename*/ , "r+b");
+    if (!fp) fp = fopen(/*filename*/ , "w+b");
+ 
+    fseek(fp, file_offset, SEEK_SET);
+    fwrite(pg->header, sizeof(page_header_struct), 1, fp);
+    fwrite(&pg->slot_num, sizeof(int), 1, fp);
+    fwrite(pg->slot, sizeof(slots), pg->slot_num, fp);
+    fwrite(pg->data, 1, pg->header->current_size, fp);
+
+    fclose(fp);
 }
 
 
 void put_the_chunk_in_the_list(toast_table_file_header * toast_header , int  chunk_id , int page_num , int slot_num){
     toast_header->num_of_lines_in_map++ ; 
-    toast_header->map_out_toast[chund_id].chunk_id = chunk_id ; 
-    toast_header->map_out_toast[chund_id].offset_of_the_same[ toast_header->map_out_toast[chund_id].offset_number++ ] = toast_header->num_of_lines_in_map ; 
-    toast * tst ; 
+    toast_header->map_out_toast[chunk_id].chunk_id = chunk_id ; 
+    toast_header->map_out_toast[chunk_id].offset_of_the_same[ toast_header->map_out_toast[chund_id].offset_number++ ] = toast_header->num_of_lines_in_map ; 
+    toast * tst = malloc(sizeof(toast)); 
     tst->chunk_id = chunk_id ; 
     tst->page = page_num ; 
     tst->slot_number = slot_num ; 
     write_toast( tst , toast_header->num_of_lines_in_map  ) ; 
+    free(tst); 
 }
 
 void toast_tables_insert(char * data ){
@@ -44,7 +60,7 @@ void toast_tables_insert(char * data ){
     int a = 0 ; 
     int size = strlen(data) ; 
     toast * tst ; 
-    int offset ; 
+    int offset = 0  ; 
     int chunk_id = toast_header->total_num_of_chunks + 1 ; 
     while ( size > 0 ){
         if (toast_header->dead_space > 0 ){
@@ -57,7 +73,7 @@ void toast_tables_insert(char * data ){
                     int bit = (temp >> j) & 1;
                     if (bit == 0) {
                         page_num = a * 8 + j ; 
-                        first = i ; 
+                        first = a ; 
                         second = j ; 
                         break;
                     }
@@ -170,50 +186,53 @@ void toast_tables_insert(char * data ){
         }
         else { 
             toast_header->pages_used++ ; 
-            if (size - offset > 2752){
+            if (size > 2752){
                 page * pg  = malloc(sizeof(page)); 
                 pg->header->page_num = toast_header->pages_used ; 
                 pg->header->page_type = toast ; 
                 pg->slot_num = 0 ; 
-                pg->slots[ pg->slot_num]->offset = 0 ; 
-                pg->slots[ pg->slot_num]->size = 0 ; 
-                pg->slot_num++
-                memcpy(pg->data , data + offset , size - offset ) ; 
-                toast_header->dead_space = toast_header->dead_space + ( 2752 - (size - offset ) ) ; 
-                page->header->free_size = page->header->free_size + ( 2752 - (size - offset ) ) ; 
+                pg->slots[ pg->slot_num].offset = 0 ; 
+                pg->slots[ pg->slot_num].size = 2752 ; 
+                pg->slot_num++ ; 
+                memcpy(pg->data , data + offset , 2752 ) ; 
+                offset = offset + 2752;
+                size = size - 2752;
+                page->header->free_size = 0 ; 
                 int temp_slot_num = toast_header->pages_used / 8 ;
-                toast_header->dead_space_available[temp_slot_num] = (toast_header->dead_space_available[temp_slot_num]<< 1) | 1;
-                int temp_slot_num = pg->slot_num / 8;
-                pg->header->dead_slots[temp_slot_num] = (pg->header->dead_slots[temp_slot_num] << 1) | 1;
-                size = 0 ; 
+                toast_header->dead_space_available[temp_slot_num] |= (1 << (7 - (toast_header->pages_used % 8)));
+                temp_slot_num = pg->slot_num / 8;
+                pg->header->dead_slots[temp_slot_num] |= (1 << (7 - ((pg->slot_num - 1) % 8))); 
                 put_the_chunk_in_the_list(toast_header , chunk_id , pg->header->page_num  , 0  ) ; 
+                write_toast_page(toast_header->pages_used * 4096, pg);
+
             }
             else { 
                 page * pg  = malloc(sizeof(page)); 
                 pg->header->page_num = toast_header->pages_used ; 
                 pg->header->page_type = toast ; 
                 pg->slot_num = 0 ; 
-                pg->slots[ pg->slot_num]->offset = 0 ; 
-                pg->slots[ pg->slot_num]->size = 0 ; 
-                pg->slot_num++
+                pg->slots[ pg->slot_num].offset = 0 ; 
+                pg->slots[ pg->slot_num].size = 0 ; 
+                pg->slot_num++ ;
                 memcpy(pg->data , data + offset , size - offset ) ; 
-                if ( 2752 - (size - offset ) >= 612 ){
-                    toast_header->dead_space = toast_header->dead_space + ( 2752 - (size - offset ) ) ; 
-                    page->header->free_size = page->header->free_size + ( 2752 - (size - offset ) ) ; 
+                if ( 2752 - size >= 612 ){
+                    toast_header->dead_space = toast_header->dead_space + ( 2752 - size) ; 
+                    pg->header->free_size = pg->header->free_size + ( 2752 - size ) ; 
                     int temp_slot_num = toast_header->pages_used / 8 ;
-                    toast_header->dead_space_available[temp_slot_num] = (toast_header->dead_space_available[temp_slot_num]<< 1) & -1 ;
-                    int temp_slot_num = pg->slot_num / 8;
-                    pg->header->dead_slots[temp_slot_num] = (pg->header->dead_slots[temp_slot_num] << 1) & ~1;
+                    toast_header->dead_space_available[temp_slot_num] &= ~(1 << (7 - (toast_header->pages_used % 8))); 
+                    temp_slot_num = pg->slot_num / 8;
+                    pg->header->dead_slots[temp_slot_num] |= (1 << (7 - ((pg->slot_num - 1) % 8)));
                 }
                 else { 
-                    page->header->free_size = page->header->free_size + ( 2752 - (size - offset ) ) ; 
+                    pg->header->free_size = pg->header->free_size + ( 2752 - size ) ; 
                     int temp_slot_num = toast_header->pages_used / 8 ;
-                    toast_header->dead_space_available[temp_slot_num] = (toast_header->dead_space_available[temp_slot_num]<< 1) | 1  ;
-                    int temp_slot_num = pg->slot_num / 8;
-                    pg->header->dead_slots[temp_slot_num] = (pg->header->dead_slots[temp_slot_num] << 1) | 1;
+                    toast_header->dead_space_available[temp_slot_num] |= (1 << (7 - (toast_header->pages_used % 8)));
+                    temp_slot_num = pg->slot_num / 8 ;
+                    pg->header->dead_slots[temp_slot_num] |= (1 << (7 - ((pg->slot_num - 1) % 8))); 
                 }
                 size = 0 ; 
                 put_the_chunk_in_the_list(toast_header , chunk_id , pg->header->page_num  , 0  ) ; 
+                write_toast_page(toast_header->pages_used * 4096, pg);
             }
 
         }
