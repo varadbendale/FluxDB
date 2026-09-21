@@ -18,22 +18,47 @@ get_toast_table_file_header *get_toast_table_file_header() {
 }
 
 
+void write_toast(toast * t, long offset) {
+    FILE *file = fopen(/*filename*/, "rb");
+    if (file == NULL) {
+        return NULL;
+    }
+    fseek(fp, offset, SEEK_SET);
+    fwrite(t, sizeof(toast), 1, fp);
+}
+
+
+void put_the_chunk_in_the_list(toast_table_file_header * toast_header , int  chunk_id , int page_num , int slot_num){
+    toast_header->num_of_lines_in_map++ ; 
+    toast_header->map_out_toast[chund_id].chunk_id = chunk_id ; 
+    toast_header->map_out_toast[chund_id].offset_of_the_same[ toast_header->map_out_toast[chund_id].offset_number++ ] = toast_header->num_of_lines_in_map ; 
+    toast * tst ; 
+    tst->chunk_id = chunk_id ; 
+    tst->page = page_num ; 
+    tst->slot_number = slot_num ; 
+    write_toast( tst , toast_header->num_of_lines_in_map  ) ; 
+}
 
 void toast_tables_insert(char * data ){
-    get_toast_table_file_header * toast_header = get_toast_table_file_header() ; 
+    toast_table_file_header * toast_header = get_toast_table_file_header() ; 
     int a = 0 ; 
     int size = strlen(data) ; 
     toast * tst ; 
     int offset ; 
+    int chunk_id = toast_header->total_num_of_chunks + 1 ; 
     while ( size > 0 ){
         if (toast_header->dead_space > 0 ){
             int page_num = -1  ; 
+            int first = 0 ; 
+            int second = 0 ; 
             while ( a < 128 ){
                 uint8_t temp = toast_header->dead_slots[a] ;
                 for (int j = 7; j >= 0; j--) {
                     int bit = (temp >> j) & 1;
                     if (bit == 0) {
                         page_num = a * 8 + j ; 
+                        first = i ; 
+                        second = j ; 
                         break;
                     }
                 }
@@ -52,7 +77,6 @@ void toast_tables_insert(char * data ){
                 int i = 0;
                 int j = 0;
                 int k = 0;
-                int where_to_put = -1;
                 int wonder = 0 ; 
                 int temp_slot_num = pg->slot_num / 8;
                 uint8_t temp;
@@ -71,14 +95,44 @@ void toast_tables_insert(char * data ){
                         }
                     }
                 }
+                int b = 0 ; 
+                int temp_pointer = 0 ; 
+                while ( b < pg->slot_num ){
+                    int first = b / 8 ; 
+                    int second  = 7 - (b % 8);
+                    if( (pg->header->dead_slots[first] >> second) & 1  == 1 ){
+                        if (pg->slot[b].offset != temp_pointer ){
+                            memmove(  pg->data + temp_pointer , pg->data + pg->slot[b].offset  , pg->slot[b].size)
+                        }
+                        temp_pointer  = temp_pointer + pg->slot[b].size ; 
+                        b++ ; 
+                    }
+                    else { 
+                        b++
+                        continue ; 
+                    }
+                }
                 pg->free_size = pg->normal_free_size ; 
+                pg->slot_num++ ; 
                 pg->slot[pg->slot_num].offset = wonder ; 
+                int temp_slot_num ; 
                 if (size + sizeof(slot) > pg->free_size ){
                     if (size + sizeof(slot) - pg->free_size < 48 ){
                         memcpy(pg->data + wonder , data + offset  , size ) ; 
                         pg->slot[pg->slot_num].size = size ; 
                         pg->free_size = pg->free_size  - size  ; 
                         size  = 0 ; 
+                        toast_header->dead_space = toast_header->dead_space - size ; 
+                        temp_slot_num = pg->slot_num / 8;
+                        pg->header->dead_slots[temp_slot_num] = (pg->header->dead_slots[temp_slot_num] << 1) | 1;
+                        if (pg->free_size < 612 ){
+                            int index = second ;
+                            int bit_pos = 7 - index;
+                            temp |= (1 << bit_pos);
+                            pg->header->dead_slots[k] = temp;
+                            toast_header->dead_space_available[first] = temp ; 
+                        } 
+                        put_the_chunk_in_the_list(toast_header , chunk_id , page_num , pg->slot_num) ; 
                     }
                     else { 
                         memcpy(pg->data + wonder , data + offset  , pg->free_size  ) ; 
@@ -86,7 +140,13 @@ void toast_tables_insert(char * data ){
                         pg->slot[pg->slot_num].size = pg->free_size ; 
                         offset = offset + pg->free_size ; 
                         pg->free_size = 0  ; 
-                        pg->slot_num++ ; 
+                        toast_header->dead_space = toast_header->dead_space - pg->free_size  ; 
+                        int index = second ;
+                        int bit_pos = 7 - index;
+                        temp |= (1 << bit_pos);
+                        pg->header->dead_slots[k] = temp;
+                        toast_header->dead_space_available[first] = temp ; 
+                        put_the_chunk_in_the_list( toast_header , chunk_id , page_num , pg->slot_num ) ; 
                     }
                 }
                 else{
@@ -94,14 +154,19 @@ void toast_tables_insert(char * data ){
                     pg->slot[pg->slot_num].size = size ; 
                     pg->free_size = pg->free_size  - size  ; 
                     size  = 0 ; 
+                    toast_header->dead_space = toast_header->dead_space - size ; 
+                    temp_slot_num = pg->slot_num / 8;
+                    pg->header->dead_slots[temp_slot_num] = (pg->header->dead_slots[temp_slot_num] << 1) | 1;
+                    if (pg->free_size < 612 ){
+                        int index = second ;
+                        int bit_pos = 7 - index;
+                        temp |= (1 << bit_pos);
+                        pg->header->dead_slots[k] = temp;
+                        toast_header->dead_space_available[first] = temp ; 
+                    }
+                    put_the_chunk_in_the_list(toast_header , chunk_id , page_num , pg->slot_num) ; 
                 }
-                
-
             }
         }
-
     }
-
-
-
 }
