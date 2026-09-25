@@ -136,3 +136,12 @@ int give_the_frame_through_clock(frames *fra  , int type ){
     }
     return ind ;
 }
+
+
+
+
+
+
+
+
+

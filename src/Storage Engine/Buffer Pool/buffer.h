@@ -38,9 +38,35 @@ typedef struct frames{
 }frames ; 
 
 
+/*
+1  →  disk I/O primitives first
+         read_from_disk()
+         write_to_disk()
+         because everything else needs these
 
+2  →  flush_page()
+         uses write_to_disk
+         clock needs this for dirty eviction
 
+3  →  fetch_page()
+         uses read_from_disk
+         uses get_which_is_free
+         uses flush via clock
+         your main read path
 
+4  →  unpin_page()
+         simple, just decrements pin count
+         marks dirty if modified
 
+5  →  new_page()
+         allocate on disk
+         bring into frame immediately
+         reuses fetch logic
+
+6  →  delete_page()
+         remove from buffer pool
+         remove from disk
+
+*/ 
 
 
