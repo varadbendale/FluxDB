@@ -1,3 +1,5 @@
+const int number_of_pages 0 ; 
+
 page *get_page_from_file(int offset) {
     FILE *file = fopen(/*"name"*/, "rb");
     if (file == NULL) {
@@ -137,14 +139,13 @@ pagezero *get_pagezero(char *filename) {
 
 
 
-void FSM(char *insert_data, int page_num, int offset, table_info *table) {
+void FSM_insert (char *insert_data, int page_num, int offset, table_info *table  ) {
     page *pg;
     char *ans;
     int size = 0;
     float *primary_key = 0;
     int first = 0;
     uint8_t temp;
-
     if (offset > 0) {
         pg = get_page_from_file(offset);
         if (pg == NULL) {
@@ -216,6 +217,7 @@ void FSM(char *insert_data, int page_num, int offset, table_info *table) {
                         if ((pg->header.dead_slots[first] >> second) & 1 == 1) {
                             if (pg->slot[a].offset != temp_pointer) {
                                 memmove(pg->data + temp_pointer, pg->data + pg->slot[a].offset, pg->slot[a].size);
+                                pg->slot[a].offset = temp_pointer ; 
                             }
                             temp_pointer = temp_pointer + pg->slot[a].size;
                             a++;
@@ -243,8 +245,29 @@ void FSM(char *insert_data, int page_num, int offset, table_info *table) {
                 }
             }
         }
+    }
         else {
-            // dont bother this one ill do it later on
+            number_of_pages++ ; 
+            pg = malloc(sizeof(page)) ; 
+            pg->header.page_num = number_of_pages ; 
+            pg->header.page_type = normal ; 
+            pg->header.num = 0 ; 
+            pg->header.toast_table_num = 0  ; 
+            pg->header.dead_slots[128] = {0} ;
+            pg->header.current_offset = 0  ; 
+            pg->header.current_size = 0  ; 
+            pg->header.free_size  = use_page_size ; 
+            pg->header.normal_free_size  = use_page_size ; 
+            pg->slot[pg->header.num].offset = 0 ; 
+            size = find_the_size_of_stuff_get_the_data_and_get_the_primary_key_num(data, table, &ans, &primary_key);
+            pg->slot[pg->header.num].size = size ;  
+            pg->slot[pg->header.num].pk = *primary_key ; 
+            memcpy(pg->data , ans , size );
+            pg->header.dead_slots[0] |= (1 << 7);
+            pg->header.free_size = pg->header.free_size - (size + sizeof(slots)) ; 
+            pg->header.normal_free_size = pg->header.normal_free_size - (size + sizeof(slots)) ; 
+            pg->header.num++ ; 
+            pg->buffer_space = PAGE_SIZE - use_page_size - sizeof(page) ; 
         }
         FILE *file = fopen(filename, "r+b");
         if (file != NULL) {
@@ -252,8 +275,167 @@ void FSM(char *insert_data, int page_num, int offset, table_info *table) {
             fwrite(pg, 1, sizeof(page), file);
             fclose(file);
         }
-
-        free(pg);
-    }
+    free(pg);
 }
+
+
+void fsm_update(page *pg , char * update_data , int slot_num ){
+    int req_space = sizeof(update_data) - pg->slot[slot_num].size ; 
+    FILE *file = fopen("normal_file", "r+b");
+    if (req_space < (pg->header.buffer_space + pg->header.free_size )){
+        if (req_space < pg->header.buffer_space + pg->header.normal_free_size){
+            memmove( pg->data + pg->slot[slot_num].offset + sizeof(update_data), pg->data + pg->slot[slot_num].offset + pg->slot[slot_num].size, (pg->header.current_offset + pg->header.current_size )  - (pg->slot[slot_num].offset + pg->slot[slot_num].size));
+            memcpy( pg->data + pg->slot[slot_num].offset, update_data , sizeof(update_data) ) ; 
+            pg->slot[slot_num].size  = sizeof(update_data) ; 
+            if (slot_num != pg->header.num){
+                for ( int l = slot_num + 1  ; l < pg->header.num ; l++ ){
+                    pg->slot[l].offset = pg->slot[l].offset + req_space ; 
+                }
+            }
+            if (req_space > pg->normal_free_size ){
+                req_space = req_space - pg->header.normal_free_size ; 
+                pg->header.free_size = pg->header.free_size - pg->header.normal_free_size ; 
+                pg->header.normal_free_size  = 0 ; 
+                pg->header.buffer_space = pg->header.buffer_space - req_space ; 
+                if (file != NULL) {
+                    fseek(file, offset, SEEK_SET);
+                    fwrite(pg, 1, sizeof(page), file);
+                    fclose(file);
+                }
+                free(pg);
+                return  ; 
+            }
+            else { 
+                memmove( pg->data + pg->slot[slot_num].offset + sizeof(update_data), pg->data + pg->slot[slot_num].offset + pg->slot[slot_num].size, ( pg->header.current_offset + pg->header.current_size )  - (pg->slot[slot_num].offset + pg->slot[slot_num].size));
+                memcpy( pg->data + pg->slot[slot_num].offset, update_data , sizeof(update_data) ) ; 
+                pg->header.normal_free_size = pg->header.normal_free_size - req_space  ; 
+                pg->header.free_size = pg->header.free_size - req_space ; 
+                if (file != NULL) {
+                    fseek(file, offset, SEEK_SET);
+                    fwrite(pg, 1, sizeof(page), file);
+                    fclose(file);
+                }
+            }
+        }
+        else {
+            int a = 0;
+            int temp_pointer = 0;
+            if ( slot_num == pg->header.num ){
+                while (a < pg->header.num) {
+                    int first = a / 8;
+                    int second = 7 - (a % 8);
+                    if ((pg->header.dead_slots[first] >> second) & 1 == 1) {
+                        if (pg->slot[a].offset != temp_pointer) {
+                            memmove(pg->data + temp_pointer, pg->data + pg->slot[a].offset, pg->slot[a].size);
+                            pg->slot[a].offset = temp_pointer ; 
+                        }
+                        temp_pointer = temp_pointer + pg->slot[a].size;
+                        a++;
+                    }
+                    else {
+                        a++;
+                        continue;
+                    }
+                }
+                pg->header.current_size = temp_pointer;
+                pg->header.normal_free_size = pg->header.free_size;
+                memmove( pg->data + pg->slot[slot_num].offset + sizeof(update_data), pg->data + pg->slot[slot_num].offset + pg->slot[slot_num].size, (pg->header.current_offset + pg->header.current_size )  - (pg->slot[slot_num].offset + pg->slot[slot_num].size));
+                memcpy( pg->data + pg->slot[slot_num].offset, update_data , sizeof(update_data) ) ; 
+                pg->slot[slot_num].size  = sizeof(update_data) ; 
+                if (req_space > pg->normal_free_size ){
+                    req_space = req_space - pg->header.normal_free_size ; 
+                    pg->header.free_size = pg->header.free_size - pg->header.normal_free_size ; 
+                    pg->header.normal_free_size  = 0 ; 
+                    pg->header.buffer_space = pg->header.buffer_space - req_space ; 
+                    if (file != NULL) {
+                        fseek(file, offset, SEEK_SET);
+                        fwrite(pg, 1, sizeof(page), file);
+                        fclose(file);
+                    }
+                    free(pg);
+                    return  ; 
+                }
+                else { 
+                    memmove( pg->data + pg->slot[slot_num].offset + sizeof(update_data), pg->data + pg->slot[slot_num].offset + pg->slot[slot_num].size, ( pg->header.current_offset + pg->header.current_size )  - (pg->slot[slot_num].offset + pg->slot[slot_num].size));
+                    memcpy( pg->data + pg->slot[slot_num].offset, update_data , sizeof(update_data) ) ; 
+                    pg->header.normal_free_size = pg->header.normal_free_size - req_space  ; 
+                    pg->header.free_size = pg->header.free_size - req_space ; 
+                    if (file != NULL) {
+                        fseek(file, offset, SEEK_SET);
+                        fwrite(pg, 1, sizeof(page), file);
+                        fclose(file);
+                    }
+                }
+
+            }
+            else { 
+                int the_slot_we_want = -1 ; 
+                int bummer = -1 ; 
+                while (a < pg->header.num) {
+                    int first = a / 8;
+                    int second = 7 - (a % 8);
+                    if ((pg->header.dead_slots[first] >> second) & 1 == 1) {
+                        if (the_slot_we_want == -1 ){
+                            if (pg->slot[a].offset != temp_pointer) {
+                                memmove(pg->data + temp_pointer, pg->data + pg->slot[a].offset, pg->slot[a].size);
+                                pg->slot[a].offset = temp_pointer ; 
+                            }
+                        }
+                        else {
+                            if (pg->slot[a].offset != temp_pointer) {
+                                memmove(pg->data + temp_pointer + req_space , pg->data + pg->slot[a].offset, pg->slot[a].size);
+                                bummer = 1 ; 
+                                pg->slot[a].offset = temp_pointer ; 
+                            }
+                        }
+
+                        if (a == slot_num){
+                            the_slot_we_want = 1 ; 
+                        }
+                        temp_pointer = temp_pointer + pg->slot[a].size ;
+                        a++;
+                    }
+                    else {
+                        a++;
+                        continue;
+                    }
+                }
+                pg->header.current_size = temp_pointer;
+                pg->header.normal_free_size = pg->header.free_size;
+                if (bummer == 1 ){
+                    memcpy( pg->data + pg->slot[slot_num].offset, update_data , sizeof(update_data) ) ; 
+                    pg->slot[slot_num].size  = sizeof(update_data) ; 
+                    if (req_space > pg->normal_free_size ){
+                        req_space = req_space - pg->header.normal_free_size ; 
+                        pg->header.free_size = pg->header.free_size - pg->header.normal_free_size ; 
+                        pg->header.normal_free_size  = 0 ; 
+                        pg->header.buffer_space = pg->header.buffer_space - req_space ; 
+                        if (file != NULL) {
+                            fseek(file, offset, SEEK_SET);
+                            fwrite(pg, 1, sizeof(page), file);
+                            fclose(file);
+                        }
+                        free(pg);
+                        return  ; 
+                    }
+                    else { 
+                        memmove( pg->data + pg->slot[slot_num].offset + sizeof(update_data), pg->data + pg->slot[slot_num].offset + pg->slot[slot_num].size, ( pg->header.current_offset + pg->header.current_size )  - (pg->slot[slot_num].offset + pg->slot[slot_num].size));
+                        memcpy( pg->data + pg->slot[slot_num].offset, update_data , sizeof(update_data) ) ; 
+                        pg->header.normal_free_size = pg->header.normal_free_size - req_space  ; 
+                        pg->header.free_size = pg->header.free_size - req_space ; 
+                        if (file != NULL) {
+                            fseek(file, offset, SEEK_SET);
+                            fwrite(pg, 1, sizeof(page), file);
+                            fclose(file);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else{
+        // page split 
+    }
+}   
+
 
