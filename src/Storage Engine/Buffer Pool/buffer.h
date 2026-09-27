@@ -1,6 +1,14 @@
 #define frames_in_buf 1024 
 #include <time.h> 
 #include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#include <time.h>
+#include <limits.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <stdint.h>
 #define frames_in_buf 1024
 #define page_size 4096
@@ -35,6 +43,14 @@ typedef struct frames{
     details * dt[frames_in_buf] ; 
     map_out_frames * mp ; 
 }frames ; 
+
+
+void make_it_free(map_out_frames *map , int thing) ;
+void make_it_occupied(map_out_frames *map , int thing) ;
+int  give_the_frame_through_clock(frames *fra , int type) ;
+void write_to_disk(uint32_t page_id , int frame_index , frames *fra) ;
+void read_from_disk(uint32_t page_id , int frame_index , frames *fra) ;
+void wait_for_the_next(int time) ;
 
 
 

@@ -1,9 +1,29 @@
+void read_from_disk( uint32_t page_id, int frame_index, frames *fra) {
+    int fd = open(/* normal page file */, O_RDWR | O_CREAT, 0644);
+    if (fd == -1) {
+        return ;
+    }
+    lseek(fd, page_id * PAGE_SIZE, SEEK_SET);
+    read(fd, fra->frames[frame_index], PAGE_SIZE);
+    close(fd);
+}
+
+void write_to_disk( uint32_t page_id, int frame_index, frames *fra) {
+    int fd = open(/* normal page file */, O_RDWR | O_CREAT, 0644);
+    if (fd == -1) {
+        return ;
+    }
+    lseek(fd, page_id * PAGE_SIZE, SEEK_SET);
+    write(fd, fra->frames[frame_index], PAGE_SIZE);
+    close(fd);
+}
+
 int get_which_is_free(frames *fra , int type ){
     int where_to_put  = -1 ; 
     int i = 0 ; 
     int temp = 0 ; 
     while (i < frames_in_buf / 8) {
-        temp = fra->bitmaps[i];
+        temp = fra->mp->bitmaps[i];
         for (int j = 7; j >= 0; j--) {
             int bit = (temp >> j) & 1;
             if (bit == 0) {
@@ -17,7 +37,7 @@ int get_which_is_free(frames *fra , int type ){
         i++ ; 
     }
     if (where_to_put != -1 ){
-        make_it_occupied(fra->mp, where_to_put) ;
+        in_use(fra->mp, where_to_put) ;
         return where_to_put ;
     }
     else { 
@@ -26,14 +46,14 @@ int get_which_is_free(frames *fra , int type ){
             if(where_to_put == -1 ){
                 return -1 ; 
             }
-            make_it_occupied(fra->mp, where_to_put) ;
+            in_use(fra->mp, where_to_put) ;
             return where_to_put;
         }
         else { 
             for (int r = 0; r < times; r++) {
                 where_to_put = give_the_frame_through_clock(fra , normal );
                 if (where_to_put != -1) {
-                    make_it_occupied(fra->mp, where_to_put) ;
+                    in_use(fra->mp, where_to_put) ;
                     return where_to_put ; 
                 } 
                 wait_for_the_next(wait_time);  
@@ -134,43 +154,29 @@ int give_the_frame_through_clock(frames *fra  , int type ){
 }
 
 
-void read_from_disk( uint32_t page_id, int frame_index, frames *fra) {
-    int fd = open(/* normal page file */, O_RDWR | O_CREAT, 0644);
-    if (fd == -1) {
-        return ;
-    }
-    lseek(fd, page_id * PAGE_SIZE, SEEK_SET);
-    read(fd, fra->frames[frame_index], PAGE_SIZE);
-}
 
-void write_to_disk( uint32_t page_id, int frame_index, frames *fra) {
-    int fd = open(/* normal page file */, O_RDWR | O_CREAT, 0644);
-    if (fd == -1) {
-        return ;
-    }
-    lseek(fd, page_id * PAGE_SIZE, SEEK_SET);
-    write(fd, fra->frames[frame_index], PAGE_SIZE);
-}
 
 
 int get_the_page_in_the_frame(frames * fra  , int page_num ){
+    int where_to_put_frame ; 
     if (fra->mp->frame_page_hash[page_num] != -1 ){
+        where_to_put_frame = fra->mp->frame_page_hash[page_num]  ; 
         fra->dt[where_to_put_frame]->use_count++ ;
         fra->dt[where_to_put_frame]->clock_treated_bit++ ;
-        return fra->mp->frame_page_hash[page_num]  ; 
+        return where_to_put_frame  ; 
     }
     else { 
-        int where_to_put_frame = get_which_is_free(fra, normal);
+        where_to_put_frame = get_which_is_free(fra, normal);
         if (where_to_put_frame == -1) {
             return -1 ;  
         }
-        read_from_disk( page_id , where_to_put_frame , fra);
-        fra->dt[where_to_put_frame]->page_id = page_id;
+        read_from_disk( page_num , where_to_put_frame , fra);
+        fra->dt[where_to_put_frame]->page_id = page_num;
         fra->dt[where_to_put_frame]->valid = 1;
         fra->dt[where_to_put_frame]->dirty = 0;
         fra->dt[where_to_put_frame]->use_count = 1;
         fra->dt[where_to_put_frame]->clock_treated_bit = 1;
-        fra->mp->frame_page_hash[page_id] = where_to_put_frame;
+        fra->mp->frame_page_hash[page_num] = where_to_put_frame;
         return where_to_put_frame ; 
     }
 }
@@ -194,27 +200,17 @@ void insert_the_thing( page * pg  , frames * fra ){
     fra->dt[frame_num]->dirty = 0 ;
     fra->dt[frame_num]->use_count = 0 ; 
     fra->dt[frame_num]->clock_treated_bit = 0 ;
-    memcpy(fra->frames[frame_num], pg, v);
-    fra->mp->frame_page_hash[page_id] = frame_num ;
+    memcpy(fra->frames[frame_num] , pg , page_size );
+    fra->mp->frame_page_hash[pg->header.page_num] = frame_num ;
     write_to_disk(pg , -1 ) ; 
 }
-
-void delete_the_page(int page_id , frames * fra  ){
-        char zeros[page_size];
-        memset(zeros, 0, page_size);
-        lseek(fd, page_id * page_size, SEEK_SET);
-        write(fd, zeros, page_size) ;
-        fra->dt[fra->mp->frame_page_hash[page_num] ]->page_id = pg->header.page_num;
-        fra->dt[fra->mp->frame_page_hash[page_num] ]->valid = 1 ;
-        fra->dt[fra->mp->frame_page_hash[page_num] ]->dirty = 0 ;
-        fra->dt[fra->mp->frame_page_hash[page_num] ]->use_count = 0 ; 
-        fra->dt[fra->mp->frame_page_hash[page_num] ]->clock_treated_bit = 0 ;
-}
-
 
 
 void delete_the_page(int fd, uint32_t page_id, frames *fra) {
     int frame_index = fra->mp->frame_page_hash[page_id];
+    if (frame_index == -1 ){
+        return  ; 
+    }
     if (fra->dt[frame_index]->use_count > 0){
         return ;
     }
