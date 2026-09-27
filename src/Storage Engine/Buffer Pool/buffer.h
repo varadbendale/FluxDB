@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <pthread.h>
 #define frames_in_buf 1024
 #define page_size 4096
 #define times 3 
@@ -26,6 +27,7 @@ typedef struct details{
     uint32_t page_id ; 
     int use_count ; 
     int clock_treated_bit ; 
+    int io_lock ; 
 }details ; 
 
 
@@ -36,12 +38,19 @@ typedef struct map_out_frames{
     int free_bits ; 
 }map_out_frames ; 
 
+typedef struct stats {
+    int hits ;       
+    int misses ;     
+    int evictions ;   
+    int flushes ;    
+} stats;
 
 
 typedef struct frames{
     char frames[frames_in_buf][4096] ;
     details * dt[frames_in_buf] ; 
     map_out_frames * mp ; 
+    stats * stat 
 }frames ; 
 
 
