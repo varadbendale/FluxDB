@@ -19,3 +19,11 @@ If the page has enough size but not the space from behind, we first check all th
 And even if that thing doesn't work, we need to rearrange everything. All the small, small spaces which are there and all the small dead slots which are of no use, we need to reshuffle all and then get the thing. We pretty much keep the pointer if the slot is not dead, keep the pointer to the tail of it, and move forward. Even if the new slots are dead or some space was left, we can just get it at the end so that we can end these internal fragmentations.
 
 So pretty much we do the memmove tool and shift all the data that way, and after that we just add the data which we had in the page. Simple as that.
+
+the upper part was of just inserting the new of the stuff but what if we need to update things that also is a pretty different thing so like yo u get the updated stuff and now you pretty much need to like put the new data in the page for the slotted work
+
+now see while inseertion some of the buffer space is kept purposely just for this stuff so yeah we use that now if the buffer space plus the space after the last slot we have space we just put some fo the required data to that slotted data and then insert stuff in it 
+
+but if we have the space but the buffer space plus the space after the last one doesnt permit means the there is internal fragmentation so we just have the rearrange every single thing and then we insert that part and then move on now see according to conditions like if the space is fitting in just normal free space no need for the buffer space or the inverse we need to update the sizes accordingly so that is one thing
+
+but lets say if literlly nothing of it works there is just no spacce we need to take the page half of it transfer to the next page and then liek split the page and then update the stuff and then move on why split because just we pretty much need to update stuff again and again so it is just convinenet so yeah 
