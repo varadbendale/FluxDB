@@ -14,6 +14,8 @@ enum page_types{
     hash
 } ; 
 
+#define use_page_size  2752  ; 
+
 #define max_no_of_slots 100
 #define data_size (page_size - sizeof(page_header_struct) - (sizeof(slots) * max_no_of_slots))
 
@@ -84,9 +86,9 @@ typedef struct page_header_struct {
     int toast_table_num ; 
     uint8_t dead_slots[128];
     int current_offset ; 
-    int current_size ; 
     int free_size ; 
     int normal_free_size ; 
+    int buffer_space ; 
 }page_header_struct ; 
  
 typedef struct slots{
@@ -189,19 +191,4 @@ void close(int fd)  ;
 
 
 
-
-
-
-
-
-toast_table_file_header *get_toast_table_file_header() {
-    FILE *file = fopen(/*filename*/, "rb");
-    if (file == NULL) return NULL;
-    toast_table_file_header *ans = malloc(sizeof(toast_table_file_header));
-    if (ans == NULL) { fclose(file); return NULL; }
-    size_t bytes_read = fread(ans, 1, sizeof(toast_table_file_header), file);
-    fclose(file);
-    if (bytes_read == 0) { free(ans); return NULL; }
-    return ans;
-}
 
