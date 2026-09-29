@@ -1,5 +1,29 @@
-void tree_func_for_insert(int pk , char * data , int page_id , int offset , int slot_num ){
-    internal_node * node = NULL ; 
+void tree_func_for_insert(internal_node * node  , int pk , char * data , int page_id , int offset , int slot_num ){
+    internal_node * stack[32] ; 
+    int k = 0  ; 
+    if (node != NULL ){
+        stack[k] = node ; 
+        k++ ; 
+        while (node != NULL && node->leaf != true ){
+            int low = 0 ; 
+            int high = no_of_data + 1  ; 
+            while ( low <= high ){
+                int mid = (low + high ) / 2 ; 
+                if (pk > node->primary_key[mid] ){
+                    low = mid + 1 ; 
+                }
+                else {
+                    high = mid - 1 ; 
+                }
+            }
+            stack[k] = node->children[low] ; 
+            k++ ; 
+            node = node->children[low] ; 
+        }
+
+        stack[k] = node->children[low] ; 
+    }
+
     if (node->num_of_leaf < no_of_data ){
         if (node->num_of_leaf > 0 ){
             int low = 0 ; 
@@ -34,20 +58,9 @@ void tree_func_for_insert(int pk , char * data , int page_id , int offset , int 
             node->leaf = true ; 
         }
         node->num_of_leaf++ ; 
-        if (node->num_of_leaf == no_of_data ){
-            internal_node * temp_node = NULL ; 
-            memcpy(temp_node , node , sizeof(struct Node) ) ; 
-            reset_the_node(node) ;  
-            node->leaf = false ; 
-            node->children[node->num_of_children] = temp_node ;
-            node->primary_key[node->num_of_children] = pk ; 
-            node->num_of_children++ ; 
-        }
     }
     else { 
-
+        
     }
-    
-    
-    
+     
 }
