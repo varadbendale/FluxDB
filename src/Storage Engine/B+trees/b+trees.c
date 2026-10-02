@@ -1,83 +1,61 @@
 void tree_func_for_insert(internal_node * node  , int pk , char * data , int page_id , int offset , int slot_num ){
     internal_node * stack[32] ; 
+    if (node == NULL ){
+        return  ; 
+    }
     int stack_index[32] ; 
     int k = 0  ; 
     int which_pos = -1 ; 
     internal_node * use_temp = node ; 
-    if (use_temp != NULL ){
-        stack[k] = use_temp ; 
-        k++ ; 
-        while (use_temp != NULL && use_temp->leaf != true ){
-            int low = 0 ; 
-            int high = use_temp->num_of_leaf - 1 ;
-            while ( low <= high ){
-                int mid = (low + high ) / 2 ; 
-                if (pk > use_temp->primary_key[mid] ){
-                    low = mid + 1 ; 
-                }
-                else {
-                    high = mid - 1 ; 
-                }
+
+    stack[k] = use_temp ;
+    stack_index[k] = 0 ;
+    while (use_temp != NULL && use_temp->leaf != true ){
+        int low = 0 ; 
+        int high = use_temp->num_of_leaf - 1 ;
+        while ( low <= high ){
+            int mid = (low + high ) / 2 ; 
+            if (pk > use_temp->primary_key[mid] ){
+                low = mid + 1 ; 
             }
-            stack[k] = use_temp->children[low] ; 
-            stack_index[k] = low ; 
-            k++ ; 
-            use_temp = use_temp->children[low] ; 
-            which_pos = low ; 
+            else if (pk ==  use_temp->primary_key[mid]  ){
+                return // error ; 
+            }
+            else {
+                high = mid - 1 ; 
+            }
         }
-        stack[k] = use_temp ; 
-        stack_index[k] = 0 ; 
+        k++ ; 
+        stack[k] = use_temp->children[low] ; 
+        stack_index[k] = low ; 
+        use_temp = use_temp->children[low] ; 
+        which_pos = low ; 
     }
 
-    if (node->num_of_leaf < no_of_data ){
-        if (node->num_of_leaf > 0 ){
-            int low = 0 ; 
-            int high  = node->num_of_leaf ; 
-            while ( low <= high ){
-                int mid = (low + high ) / 2 ; 
-                if (pk == node->primary_key[mid] ){
-                    return ; // error 
-                }
-                else if (pk > node->primary_key[mid] ){
-                    low = mid + 1 ; 
-                }
-                else {
-                    high = mid - 1 ; 
-                }
-            }
-
-            for (int i = node->num_of_leaf + 1 ; i > low ; i--) {
-                node->primary_key[i] = node->primary_key[i-1];
-                node->data[i] = node->data[i-1];
-            }
-            node->primary_key[low] = pk ;  
-            node->data[low].page_id = page_id ; 
-            node->data[low].file_offset = offset ; 
-            node->data[low].slot_num = slot_num ; 
+    if (stack[k]->num_of_leaf < no_of_data ){
+        for (int i = stack[k]->num_of_leaf ; i > which_pos ; i--) {
+            stack[k]->primary_key[i] = stack[k]->primary_key[i-1];
+            stack[k]->data[i] = stack[k]->data[i-1];
         }
-        else { 
-            node->primary_key[node->num_of_leaf] = pk ;
-            node->data[node->num_of_leaf].page_id = page_id ; 
-            node->data[node->num_of_leaf].file_offset = offset ; 
-            node->data[node->num_of_leaf].slot_num = slot_num ; 
-            node->leaf = true ; 
-        }
+        node->primary_key[low] = pk ;  
+        node->data[low].page_id = page_id ; 
+        node->data[low].file_offset = offset ; 
+        node->data[low].slot_num = slot_num ; 
+        node->leaf = true ; 
         node->num_of_leaf++ ; 
     }
     else { 
         internal_node * temp_node ; 
         int catch_which_to_put_as_parent = -1 ; 
-        while (k > 0 ){
-            if (stack[k] != NULL && stack[k]->leaf == true && stack[k]->num_of_children == no_of_data  ){
-                int tem = slot[k]->num_of_leaf /2 ; 
-                for ( int i = 0 ; i < no_of_data /2 ; i++ ){
+        while (k >= 0 ){
+            if (stack[k] != NULL && stack[k]->leaf == true ){
+                int tem = stack[k]->num_of_leaf /2 ; 
+                for ( int i = 0 ; i < tem ; i++ ){
                     temp_node->primary_key[temp_node->num_of_leaf] = stack[k]->primary_key[tem + i ] ; 
-                    temp_node->data[temp_node->num_of_leaf].page_id = stack[k]->data[tem + i ].page_id ; 
-                    temp_node->data[temp_node->num_of_leaf].file_offset = stack[k]->data[tem + i ].file_offset  ; 
-                    temp_node->data[temp_node->num_of_leaf].slot_num = stack[k]->data[tem + i ].slot_num  ;
+                    temp_node->data[temp_node->num_of_leaf] = stack[k]->data[tem + i ] ; 
                     temp_node->num_of_leaf++ ; 
                 }
-                slot[k]->num_of_leaf = tem / 2 ; 
+                stack[k]->num_of_leaf = tem ; 
                 if (which_pos > tem ){
                     which_pos = which_pos - tem ; 
                     for (int i = temp_node->num_of_leaf + 1 ; i > which_pos ; i--) {
@@ -88,6 +66,7 @@ void tree_func_for_insert(internal_node * node  , int pk , char * data , int pag
                     temp_node->data[which_pos].page_id = page_id ; 
                     temp_node->data[which_pos].file_offset = offset ; 
                     temp_node->data[which_pos].slot_num = slot_num ; 
+                    temp_node->num_of_leaf++ ;
                 }
                 else {
                     for (int i = stack[k]->num_of_leaf + 1 ; i > which_pos ; i--) {
@@ -98,13 +77,13 @@ void tree_func_for_insert(internal_node * node  , int pk , char * data , int pag
                     stack[k]->data[which_pos].page_id = page_id ; 
                     stack[k]->data[which_pos].file_offset = offset ; 
                     stack[k]->data[which_pos].slot_num = slot_num ; 
-                    slot[k]->num_of_leaf++ ; 
+                    stack[k]->num_of_leaf++ ; 
                 }
                 stack[k]->next = temp_node ; 
                 catch_which_to_put_as_parent = stack[k]->primary_key[stack[k]->num_of_leaf].pk  ; 
             }
 
-            else if (stack[k] != NULL && stack[k]->leaf == false && temp_node != NULL && stack[k]->num_of_children < no_of_data + 1  ){
+            else if (stack[k] != NULL && stack[k]->leaf == false && temp_node != NULL && stack[k]->num_of_children < no_of_data   ){
                 int low = 0 ; 
                 int high = no_of_data + 1  ; 
                 while ( low <= high ){
@@ -162,23 +141,25 @@ void tree_func_for_insert(internal_node * node  , int pk , char * data , int pag
                 int turner = 0 ; 
                 while ( kalos <= k ){ 
                     internal_node * nadda  ; 
-                    if (kalos == 0  ){
-                        *nadda = (internal_node *)malloc(sizeof(internal_node)) ;
-                        memset(nadda , 0 , sizeof(internal_node)) ;
-                        nadda->num_of_leaf = 0 ; 
-                        nadda->num_of_data_pushed = 0 ; 
-                        nadda->num_of_children = 0 ; 
-                        nadda->leaf = false ;
+                    if (kalos == 0  && lame == -1 ){
+                        nadda = (internal_node *)malloc(sizeof(internal_node)) ;
+                        memcpy(nadda , stack[0] , sizeof(internal_node)) ;
+                        memset(stack[0] , 0 , sizeof(internal_node)) ;
+                        stack[0]->leaf = false ;
+                        stack[0]->children[0] = nadda ;
+                        stack[0]->num_of_children = 1 ;
+                        stack[0]->num_of_leaf = 0 ;
+                        nadda = stack[0]->children[0] ;
                     }
                     else{
                         nadda = stack[kalos] ; 
                     }
                     
                     if (turner == 0 ){
-                        for (int i = nadda->num_of_leaf ; i > stack_index[kalos] ; i--) {
+                        for (int i = nadda->num_of_leaf ; i > stack_index[kalos + 1] ; i--) {
                             nadda->primary_key[i] = nadda->primary_key[i-1] ;
                         }
-                        nadda->primary_key[stack_index[kalos]] = catch_which_to_put_as_parent ; 
+                        nadda->primary_key[stack_index[kalos + 1]] = catch_which_to_put_as_parent ; 
                         nadda->num_of_leaf++ ; 
                         turner = 1 ; 
                     }
@@ -203,16 +184,11 @@ void tree_func_for_insert(internal_node * node  , int pk , char * data , int pag
                         for_the_temp = 0 ; 
                         for (int o = tempacola  ; o < nadda->num_of_children ; o++ ){
                             tempo->children[for_the_temp] = nadda->children[o] ; 
+                            nadda->children[o] = NULL ;
                             tempo->num_of_children++ ; 
                             for_the_temp++ ; 
                         }
                         nadda->num_of_children = tempacola ; 
-                        for (int i = nadda->num_of_children + 1 ; i > stack_index[kalos] + 1  ; i--) {
-                            nadda->children[i] = nadda->children[i-1] ;
-                        }
-                        nadda->children[stack_index[kalos] + 1 ] = tempo   ; 
-                        nadda->children[stack_index[kalos]]->next = tempo ; 
-                        nadda->num_of_children++ ; 
                         kalos++  ; 
                         if ( stack_index[kalos] < tempacola  ){
                             stack[kalos] = nadda->children[stack_index[kalos ] - 1 ]  ; 
@@ -220,7 +196,19 @@ void tree_func_for_insert(internal_node * node  , int pk , char * data , int pag
                         else { 
                             stack[kalos] = tempo  ; 
                         }
-                        
+
+                        internal_node * where_to_add  ; 
+                        if (kalos - 2 >= 0 ){
+                            where_to_add = stack[kalos - 2 ] ; 
+                        }
+                        else { 
+                            where_to_add = stack[0 ] ; 
+                        }
+                        for (int i = where_to_add->num_of_children + 1; i > stack_index[kalos - 1] + 1; i--) {
+                            where_to_add->children[i] = where_to_add->children[i-1];
+                        }
+                        where_to_add->children[stack_index[kalos - 1] + 1] = tempo;
+                        where_to_add->num_of_children++;
                     }
                     else {
                         internal_node * the_parent_for_the_stuff = stack[kalos - 1 ] ; 
@@ -233,6 +221,10 @@ void tree_func_for_insert(internal_node * node  , int pk , char * data , int pag
                             for_the_temp++ ;   
                         }
                         nadda->num_of_data_pushed = tempacola ; 
+                        nadda->num_of_leaf = tempacola ;          
+                        tempo->num_of_leaf = tempo->num_of_data_pushed ;
+                        tempo->leaf = true ;
+
                         for (int i = the_parent_for_the_stuff->num_of_data_pushed + 1 ; i > parent_num + 1  ; i--) {
                             the_parent_for_the_stuff->children[i] = the_parent_for_the_stuff->children[i-1] ;
                         }
@@ -245,6 +237,7 @@ void tree_func_for_insert(internal_node * node  , int pk , char * data , int pag
                                 nadda->data[i] = nadda->data[i-1] ;
                             }
                             nadda->num_of_data_pushed++ ; 
+                            nadda->num_of_leaf++ ;
                             nadda->data[stack_index[kalos]].page_id = page_id ; 
                             nadda->data[stack_index[kalos]].file_offset = offset ; 
                             nadda->data[stack_index[kalos]].slot_num = slot_num ; 
@@ -252,7 +245,7 @@ void tree_func_for_insert(internal_node * node  , int pk , char * data , int pag
                         else { 
                             stack_index[kalos]  = stack_index[kalos] - nadda->num_of_data_pushed  ; 
                             the_parent_for_the_stuff->children[parent_num + 1 ]->data[stack_index[kalos]].page_id = page_id ;
-                            the_parent_for_the_stuff->children[parent_num + 1 ]->data[stack_index[kalos]].file_offset = file_offset ;
+                            the_parent_for_the_stuff->children[parent_num + 1 ]->data[stack_index[kalos]].file_offset = offset ;
                             the_parent_for_the_stuff->children[parent_num + 1 ]->data[stack_index[kalos]].slot_num = slot_num ;
                         }
                         return ; 
