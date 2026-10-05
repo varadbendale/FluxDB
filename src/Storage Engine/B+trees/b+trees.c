@@ -261,8 +261,14 @@ void delete_the_thing(internal_node * node , int key ){
     int first_pos[32] ; 
     internal_node * temp = node ; 
     internal_node * temp_stack[32] ; 
+    int next_one_pk = the_next_one->data[0] ; 
+    int for_second_change[32] ;
+    int second_pos[32] ; 
     int k = 0 ; 
     temp_stack[k++] = node ; 
+    int first_counter ; 
+    int second_counter ; 
+    internal_node * next_temp_stack[32] ; 
     int temp_counter = 0 ; 
     int first_alrm = 0 ;
     int scnd_alrm = 0 ;
@@ -293,6 +299,7 @@ void delete_the_thing(internal_node * node , int key ){
         temp_stack[k++] = temp ; 
     }
     k-- ; 
+    first_counter = k ; 
 
     int num = temp->num_of_data_pushed -1  ; 
     int low = 0 ; 
@@ -322,6 +329,40 @@ void delete_the_thing(internal_node * node , int key ){
     }
     else { 
         internal_node * the_next_one = temp->next ; 
+        temp_counter = 0 ; 
+        internal_node * the_next_temp = node ; 
+        
+        k = 0 ;
+        next_temp_stack[k++] = node ;
+        while (the_next_temp->leaf != true ){
+            int low_second = 0 ; 
+            int high_second = the_next_temp->num_of_leaf ; 
+            while (low_second <= high_second ){
+                int mid_second = (low_second + high_second ) / 2 ; 
+                if (next_one_pk <=  the_next_temp->primary_key[mid_second] ){
+                    high_second  = mid_second - 1 ; 
+                    if (next_one_pk ==  the_next_temp->primary_key[mid_second] ){
+                        scnd_alrm = temp_counter ; 
+                    }
+                }
+                else { 
+                    low_second = mid_second + 1 ; 
+                }
+            }
+            if (low_second < the_next_temp->num_of_leaf) {
+                for_second_change[temp_counter] = the_next_temp->primary_key[low_second] ; 
+            }
+            else {
+                for_second_change[temp_counter] = -1;
+            }
+            second_pos[temp_counter] = low_second ; 
+            temp_counter++ ; 
+            the_next_temp = the_next_temp->children[low_second] ; 
+            next_temp_stack[k++] = the_next_temp ; 
+        }
+        k-- ; 
+        second_counter = k ; 
+
         if (the_next_one != NULL && the_next_one->num_of_data_pushed - 1 > no_of_data / 2 ){
             temp->primary_key[temp->num_of_leaf] = the_next_one->data[0].page_id ;  
             temp->data[temp->num_of_data_pushed] = the_next_one->data[0] ; 
@@ -342,41 +383,6 @@ void delete_the_thing(internal_node * node , int key ){
                 }
             }
 
-            temp_counter = 0 ; 
-            int next_one_pk = the_next_one->data[0] ; 
-            int for_second_change[32] ;
-            int second_pos[32] ; 
-            internal_node * the_next_temp = node ; 
-            internal_node * next_temp_stack[32] ; 
-            k = 0 ;
-            next_temp_stack[k++] = node ;
-            while (the_next_temp->leaf != true ){
-                int low_second = 0 ; 
-                int high_second = the_next_temp->num_of_leaf ; 
-                while (low_second <= high_second ){
-                    int mid_second = (low_second + high_second ) / 2 ; 
-                    if (next_one_pk <=  the_next_temp->primary_key[mid_second] ){
-                        high_second  = mid_second - 1 ; 
-                        if (next_one_pk ==  the_next_temp->primary_key[mid_second] ){
-                            scnd_alrm = temp_counter ; 
-                        }
-                    }
-                    else { 
-                        low_second = mid_second + 1 ; 
-                    }
-                }
-                if (low_second < the_next_temp->num_of_leaf) {
-                    for_second_change[temp_counter] = the_next_temp->primary_key[low_second] ; 
-                }
-                else {
-                    for_second_change[temp_counter] = -1;
-                }
-                second_pos[temp_counter] = low_second ; 
-                temp_counter++ ; 
-                the_next_temp = the_next_temp->children[low_second] ; 
-                next_temp_stack[k++] = the_next_temp ; 
-            }
-            k-- ; 
 
             num = temp->num_of_data_pushed -1  ; 
             the_next_one->num_of_data_pushed-- ; 
@@ -404,7 +410,45 @@ void delete_the_thing(internal_node * node , int key ){
             }
         }
         else {
-            
+            int i = 0 ; 
+            int j = 0 ; 
+            internal_node * the_merger_one = (internal_node *)malloc(sizeof(internal_node)) ;
+            while (1){
+                if (temp_stack[i] != NULL && next_temp_stack[j] != NULL && temp_stack[i] == next_temp_stack[j]  ){
+                    memcpy(the_merger_one , temp_stack[i] , sizeof(internal_node)) ;
+                    i++ ; 
+                    j++ ; 
+                }
+                else {
+                    break ; 
+                }
+            }
+            int lapoliza = first_counter ; 
+            int for_change_counter = first_counter ; 
+            for ( int s = 0 ; s < the_next_one->num_of_leaf ; s++  ){
+                temp->primary_key[temp->num_of_leaf + s] = the_next_one->primary_key[s] ; 
+                temp->num_of_leaf++ ; 
+            }
+            for ( int s = 0 ; s < the_next_one->num_of_data_pushed ; s++  ){
+                temp->children[temp->num_of_data_pushed + s] = the_next_one->children[s] ; 
+                temp->num_of_data_pushed++ ; 
+            }
+            internal_node * the_merged_node = temp ; 
+            int bit = 0 ; 
+            int catch_which_to_put_as_parent = -1 ; 
+            while (  temp_stack[first_pos[lapoliza]] != NULL  && lapoliza >= i  ){
+                if ( bit == 0 ){
+                    catch_which_to_put_as_parent = temp->primary_key[temp->num_of_leaf / 2 ] ; 
+                }
+                else  {
+
+                }
+
+
+            }
+
+
+
         }
 
     }
