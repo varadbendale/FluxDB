@@ -413,9 +413,11 @@ void delete_the_thing(internal_node * node , int key ){
             int i = 0 ; 
             int j = 0 ; 
             internal_node * the_merger_one = (internal_node *)malloc(sizeof(internal_node)) ;
+            int the_merger_num = -1 ; 
             while (1){
                 if (temp_stack[i] != NULL && next_temp_stack[j] != NULL && temp_stack[i] == next_temp_stack[j]  ){
                     memcpy(the_merger_one , temp_stack[i] , sizeof(internal_node)) ;
+                    the_merger_num = i ; 
                     i++ ; 
                     j++ ; 
                 }
@@ -436,19 +438,37 @@ void delete_the_thing(internal_node * node , int key ){
             internal_node * the_merged_node = temp ; 
             int bit = 0 ; 
             int catch_which_to_put_as_parent = -1 ; 
-            while (  temp_stack[first_pos[lapoliza]] != NULL  && lapoliza >= i  ){
-                if ( bit == 0 ){
-                    catch_which_to_put_as_parent = temp->primary_key[temp->num_of_leaf / 2 ] ; 
+            while (  temp_stack[lapoliza] != NULL  && lapoliza >= i  ){
+                if (bit == 0 ){
+                    temp_stack[lapoliza]->primary_key[for_change[lapoliza]] =  temp->primary_key[temp->num_of_leaf / 2 ]  ; 
+                    bit = 1 ; 
                 }
-                else  {
-
+                else{
+                    temp_stack[lapoliza]->primary_key[for_change[lapoliza]] =  temp_stack[lapoliza + 1]->primary_key[temp_stack[lapoliza + 1]->num_of_leaf / 2]  ; 
                 }
-
-
+                lapoliza-- ; 
             }
-
-
-
+            int j = the_merger_num ; 
+            internal_node * just_there ; 
+            while ( j <  second_counter ){
+                internal_node * for_the_func_temp ; 
+                if (the_merger_one->children[second_pos[j+1]] != NULL ){
+                    for_the_func_temp = the_merger_one->children[second_pos[j+1]]  ; 
+                }
+                the_merger_one->primary_key[second_pos[j]] = for_the_func_temp->primary_key[second_pos[j + 1]]  ;
+                just_there = the_merger_one ; 
+                the_merger_one = for_the_func_temp ; 
+                j++ ;
+            }
+            for (int m = 0 ; m < just_there->num_of_leaf  ; m++ ) {
+                just_there->primary_key[m] = just_there->primary_key[m+1] ;
+            }
+            just_there->primary_key[just_there->num_of_leaf ] = -1 ; 
+            for (int m = 0 ; m < just_there->num_of_data_pushed  ; m++ ) {
+                just_there->children[m] = just_there->children[m+1] ;
+            }
+            just_there->primary_key[just_there->num_of_data_pushed ] = NULL ; 
+            the_merger_one->primary_key[second_pos[second_counter]] = the_merger_one->children[second_pos[second_counter]]->primary_key[he_merger_one->children[second_pos[second_counter]]->num_of_leaf /2 ] ; 
         }
 
     }
