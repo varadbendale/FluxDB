@@ -26,7 +26,8 @@ typedef struct Create_tree_def {
 }ctree
 
 
-typedef struct  {
+
+typedef struct  insert_parser_tree{
     char *comp;
     char *table;
     char **table_cols;
@@ -37,17 +38,7 @@ typedef struct  {
     int insert_val_num;
     int ignore;
     int replace  ;
-} insert_parser_tree
-
-
-
-
-typedef struct Create_tree_def {
-    char *  default_val ; 
-    int  foreign_key_counter ; 
-    char ** foreign_key ; 
-}ctree
-
+} itree 
 
 
 
@@ -76,6 +67,20 @@ typedef struct Tree_def {
 } Tree_def;
 
 typedef Tree_def tree  ; 
+
+typedef struct delete_parser_tree {
+    char * comp ;
+    char * as ;
+    struct delete_parser_tree ** children ;
+    tree * sub ;
+    int num ;
+    int line ;
+    int col ;
+} dtree ;
+
+dtree* createNodeDelete( char* comp ) ;
+dtree* delete_parser() ;
+
 
 
 Tree_def* make_leaf(char* value , int row , int col ) {
