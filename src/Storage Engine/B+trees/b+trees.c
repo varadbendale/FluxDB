@@ -269,22 +269,25 @@ void delete_the_thing(internal_node * node , int key ){
     int second_counter ; 
     internal_node * next_temp_stack[32] ; 
     int temp_counter = 0 ; 
-    int first_alrm = 0 ;
-    int scnd_alrm = 0 ;
+    int first_alrm = -1 ;
+    int scnd_alrm = -1  ;
+
     while (temp->leaf != true ){
         int low = 0 ; 
-        int high = temp->num_of_leaf ; 
+        int high = temp->num_of_leaf -1  ; 
         while (low <= high ){
             int mid = (low + high ) / 2 ; 
             if (key <=  temp->primary_key[mid] ){
                 high  = mid - 1 ; 
-                if (key ==  temp->primary_key[mid] ){
-                    first_alrm = temp_counter ; 
-                }
             }
             else { 
                 low = mid + 1 ; 
             }
+        }
+        if (low < temp->num_of_leaf && temp->primary_key[low] == key){
+            if (first_alrm == -1 ){
+                first_alrm = temp_counter ; 
+            } 
         }
         if (low < temp->num_of_leaf ){
             for_change[temp_counter] = temp->primary_key[low] ;
@@ -301,12 +304,15 @@ void delete_the_thing(internal_node * node , int key ){
     first_counter = k ; 
 
     int num = temp->num_of_data_pushed -1  ; 
+    int happen_or_no = 0 ; 
     int low = 0 ; 
     int high = num ; 
     while ( low <= high ){
         int mid = ( low + high ) / 2 ; 
         if (key == temp->data[mid].page_id ){
             temp->num_of_data_pushed-- ; 
+            happen_or_no = 1 ; 
+            temp->num_of_leaf-- ;
             for (int i = mid ; i < num  ; i++ ) {
                 temp->data[i] = temp->data[i+1];
                 temp->primary_key[i] = temp->primary_key[i+1];
@@ -322,16 +328,19 @@ void delete_the_thing(internal_node * node , int key ){
             low = mid + 1 ; 
         }
     }
+    if ( happen_or_no == 0 ){
+        return ;
+    }
 
     if (temp->num_of_data_pushed >= no_of_data / 2 ){
         return ; 
     }
     else { 
         internal_node * the_next_one = temp->next ; 
-        int next_one_pk = the_next_one->data[0].page_id ; 
         if (the_next_one == NULL ){
             return ; 
         }
+        int next_one_pk = the_next_one->data[0].page_id ; 
         temp_counter = 0 ; 
         internal_node * the_next_temp = node ; 
         
@@ -366,28 +375,14 @@ void delete_the_thing(internal_node * node , int key ){
         k-- ; 
         second_counter = k ; 
 
-        if (the_next_one != NULL && the_next_one->num_of_data_pushed - 1 > no_of_data / 2 ){
+
+        if (the_next_one != NULL && the_next_one->num_of_data_pushed - 1 >= no_of_data / 2 ){
             temp->primary_key[temp->num_of_leaf] = the_next_one->data[0].page_id ;  
             temp->data[temp->num_of_data_pushed] = the_next_one->data[0] ; 
             temp->num_of_data_pushed++ ; 
             temp->num_of_leaf++ ;
 
-            if (first_alrm > 0 ){ 
-                int first_stuff =  = ( temp_counter - 1 ) - first_alrm ; 
-                int the_updated_mid = -1  ; 
-                while (first_stuff > 0 ){
-                    int m = ( temp_stack[ k-1 ]->num_of_leaf ) / 2 ; 
-                    if (the_updated_mid != -1 ){
-                        temp_stack[ k ]->primary_key[m] = the_updated_mid ; 
-                    }
-                    the_updated_mid = temp_stack[ k  ]->primary_key[m]  ; 
-                    k-- ;
-                    first_stuff-- ; 
-                }
-            }
-
-
-            num = temp->num_of_data_pushed -1  ; 
+            num = the_next_one->num_of_data_pushed - 1   ; 
             the_next_one->num_of_data_pushed-- ; 
             memset(&the_next_one->data[0] , 0 , sizeof(the_next_one->data[0])) ;
             for (int i = 0 ; i < num  ; i++ ) {
@@ -397,18 +392,50 @@ void delete_the_thing(internal_node * node , int key ){
             memset(&the_next_one->data[num] , 0 , sizeof(the_next_one->data[num])) ;
             the_next_one->primary_key[num] = -1 ; 
 
-            if (scnd_alrm > 0 ){
-                int scnd_steps = ( temp_counter - 1 ) - scnd_alrm ; 
-                a = 0 ; 
-                the_updated_mid = -1  ; 
-                while (scnd_steps > 0 ){
-                    int m = ( next_temp_stack[ k-1 ]->num_of_leaf ) / 2 ; 
-                    if (the_updated_mid != -1 ){
-                        next_temp_stack[ k ]->primary_key[m] = the_updated_mid ; 
+
+
+            if (first_alrm >= 0 ){ 
+                int the_updated_mid = temp->primary_key[temp->num_of_leaf / 2] ;
+                int first_stuff = first_counter - first_alrm ; 
+                k = first_counter ;  
+                while (first_stuff > 0  ){
+                    int m = ( temp_stack[ k-1 ]->num_of_leaf ) / 2 ; 
+                    if (first_pos[ k-1 ] < temp_stack[ k-1 ]->num_of_leaf ){
+                        temp_stack[ k-1 ]->primary_key[ first_pos[ k-1 ] ] = the_updated_mid ; 
                     }
-                    the_updated_mid = next_temp_stack[ k  ]->primary_key[m]  ; 
-                    k-- ; 
-                    scnd_steps-- ; 
+                    the_updated_mid = temp_stack[ k -1  ]->primary_key[m]  ; 
+                    k-- ;
+                    first_stuff-- ; 
+                }
+            }
+
+            if (scnd_alrm >= 0 ){                                         
+                int the_updated_mid = the_next_one->primary_key[the_next_one->num_of_leaf / 2] ;
+                int scnd_steps = second_counter - scnd_alrm ;
+                k = second_counter ;
+                while (scnd_steps > 0 ){
+                    internal_node * par = next_temp_stack[ k-1 ] ;
+                    if (second_pos[ k-1 ] < par->num_of_leaf ){
+                        par->primary_key[ second_pos[ k-1 ] ] = the_updated_mid ;
+                    }
+                    the_updated_mid = par->primary_key[ par->num_of_leaf / 2 ] ;
+                    k-- ;
+                    scnd_steps-- ;
+                }
+            }
+
+            if (first_alrm >= 0 ){ 
+                int the_updated_mid = temp->primary_key[temp->num_of_leaf / 2] ;
+                int first_stuff = first_counter - first_alrm ; 
+                k = first_counter ;  
+                while (first_stuff > 0  ){
+                    int m = ( temp_stack[ k-1 ]->num_of_leaf ) / 2 ; 
+                    if (first_pos[ k-1 ] < temp_stack[ k-1 ]->num_of_leaf ){
+                        temp_stack[ k-1 ]->primary_key[ first_pos[ k-1 ] ] = the_updated_mid ; 
+                    }
+                    the_updated_mid = temp_stack[ k -1  ]->primary_key[m]  ; 
+                    k-- ;
+                    first_stuff-- ; 
                 }
             }
         }
