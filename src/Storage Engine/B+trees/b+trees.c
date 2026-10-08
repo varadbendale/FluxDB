@@ -252,8 +252,59 @@ void tree_func_for_insert(internal_node * node  , int pk , char * data , int pag
         }
 }
      
+int validate_the_tree_data(internal_node *  root){
+    while ( root->leaf != true ){
+        root = root->children[0] ;
+    }
+    int check = -1 ; 
+    while ( root->next != NULL ){
+        int i = 0 ; 
+        while(i < root->num_of_leaf ){
+            if (root->primary_key[i]  <=  check  ){
+                return 1 ; 
+            }
+            check = root->primary_key[i] ; 
+            i++ ; 
+        }
+        root = root->next ; 
+    }
+    return 0 ; 
+}
 
+int validate_the_tree_node ( internal_node * root  , int high , int low ){
+    for ( int i = 0 ; i < root->num_of_leaf ; i++ ){
+        if (root->primary_key[i] < high && root->primary_key[i] > low  ){
+            if (root->num_of_children > 0 ){
+                for ( int j = 0 ; j < root->num_of_children ; j++ ){
+                    if ( j == 0 ){
+                        validate_the_tree_node(root->children[i] ,  root->primary_key[i]  , low ) ; 
+                    }
+                    if (j == root->num_of_children  - 1 ){
+                        validate_the_tree_node(root->children[i] ,  high , root->primary_key[i]  ) ; 
+                    }
+                    else { 
+                        validate_the_tree_node(root->children[i]  , root->primary_key[i+ 1 ] , root->primary_key[i]  ) ; 
+                    }
+                }
+            }
+        }
+        else { 
+            return 1 ; 
+        }
+        
+    }
+    return 0 ; 
+}
 
+int validate_the_tree(internal_node * root ){
+    if (validate_the_tree_data(root) == 1 ){
+        return 1  ; 
+    }
+    else if (validate_the_tree_node(root) == 1){
+        return 1 ; 
+    }
+    return 0 ; 
+}   
 
 
 void delete_the_thing(internal_node * node , int key ){
@@ -525,6 +576,45 @@ void delete_the_thing(internal_node * node , int key ){
 
             temp->next = the_next_one->next ;  
             free(the_next_one) ;
+
+
+            int remove_counter = 0 ; 
+            while ( temp_stack[remove_counter]->num_of_children == 1 ){
+                remove_counter++ ; 
+            }
+            int kappa = 0 ; 
+            int jojo = remove_counter  ; 
+            int first = 0 ; 
+            while ( jojo < second_counter ){
+                if (first  == 0 ){
+                    node = temp_stack[kappa ] ; 
+                }
+                temp_stack[kappa ] = temp_stack[jojo] ; 
+                for_change[kappa] = for_change[jojo] ; 
+                first_pos[kappa] = first_pos[jojo] ; 
+                first_counter-- ; 
+                next_temp_stack[kappa ] = next_temp_stack[jojo] ; 
+                for_second_change[kappa] = for_second_change[jojo] ; 
+                second_pos[kappa] = second_pos[jojo] ; 
+                first_counter-- ; 
+                kappa++ ; 
+                jojo++ ; 
+            }
+            while ( kappa < remove_counter ){
+                temp_stack[kappa ] = NULL ; 
+                for_change[kappa] = -1 ; 
+                first_pos[kappa] = -1  ; 
+                next_temp_stack[kappa ] = NULL ; 
+                for_second_change[kappa] = -1 ; 
+                second_pos[kappa] = -1 ; 
+                kappa++ ; 
+            }
+            if (validate_the_tree(node )  == 1 ){
+                 return ; //error ; 
+            }
+
+
+
             second_counter-- ; 
             while (second_counter >= 0 && next_temp_stack[second_counter]->num_of_children <  no_of_data / 2 ){
                 for ( int i = 0 ; i < 32 ; i++ ){
@@ -688,18 +778,47 @@ void delete_the_thing(internal_node * node , int key ){
                     if (next_temp_stack[second_counter]->num_of_children >=  no_of_data / 2 ){
                         break ; 
                     }
+                    remove_counter = 0 ; 
+                    while ( temp_stack[remove_counter]->num_of_children == 1 ){
+                        remove_counter++ ; 
+                    }
+                    kappa = 0 ; 
+                    jojo = remove_counter  ; 
+                    first = 0 ; 
+                    while ( jojo < second_counter ){
+                        if (first  == 0 ){
+                            node = temp_stack[kappa ] ; 
+                        }
+                        temp_stack[kappa ] = temp_stack[jojo] ; 
+                        for_change[kappa] = for_change[jojo] ; 
+                        first_pos[kappa] = first_pos[jojo] ; 
+                        first_counter-- ; 
+                        next_temp_stack[kappa ] = next_temp_stack[jojo] ; 
+                        for_second_change[kappa] = for_second_change[jojo] ; 
+                        second_pos[kappa] = second_pos[jojo] ; 
+                        first_counter-- ; 
+                        kappa++ ; 
+                        jojo++ ; 
+                    }
+                    while ( kappa < remove_counter ){
+                        temp_stack[kappa ] = NULL ; 
+                        for_change[kappa] = -1 ; 
+                        first_pos[kappa] = -1  ; 
+                        next_temp_stack[kappa ] = NULL ; 
+                        for_second_change[kappa] = -1 ; 
+                        second_pos[kappa] = -1 ; 
+                        kappa++ ; 
+                    }
+                    if (validate_the_tree(node )  == 1 ){
+                        return ; //error ; 
+                    }
                 }
-
-
             }
-                }
-
-
-            }
-
-
-
         }
+
+    }
+
+}
 
 
 
