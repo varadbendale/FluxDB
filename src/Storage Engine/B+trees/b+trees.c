@@ -525,112 +525,202 @@ void delete_the_thing(internal_node * node , int key ){
 
             temp->next = the_next_one->next ;  
             free(the_next_one) ;
-        }
-
-    }
-}
-
-
-
-
-second_counter-- ; 
-if (second_counter >= 0 && next_temp_stack[second_counter]->num_of_children <  no_of_data / 2 ){
-    for ( int i = 0 ; i < 32 ; i++ ){
-        temp_stack[i] = next_temp_stack[i] ; 
-        for_change[i] = for_second_change[i] ; 
-        first_pos[i] = second_pos[i] ; 
-    }
-    first_counter = second_counter ; 
-
-    temp = temp_stack[first_counter] ; 
-    int current_counter = first_counter ; 
-    while (first_pos[current_counter] + 1 >  temp_stack[current_counter]->num_of_children ){
-        current_counter-- ; 
-    }
-    first_alrm = scnd_alrm ; 
-    
-    internal_node * merger_node  = temp_stack[current_counter] ; 
-    int kj = 0 ; 
-    internal_node * the_next_one  = merger_node->children[first_pos[current_counter] + 1]  ; 
-    for_second_change[current_counter] = merger_node->primary_key[first_pos[current_counter]+ 1 ] ; 
-    next_temp_stack[current_counter] = the_next_one ; 
-    second_pos[current_counter]++ ; 
-    kj++ ; 
-    int temp_key = -1 ; 
-    while ( kj <= first_counter - current_counter ){
-        second_pos[current_counter + kj ] = 0 ; 
-        the_next_one = the_next_one->children[0] ; 
-        next_temp_stack[current_counter + kj] = the_next_one ; 
-        for_second_change[current_counter + kj ] = the_next_one->primary_key[0] ; 
-        temp_key = the_next_one->primary_key[0] ; 
-        kj++  ; 
-    }
-    internal_node * second_alrm_node = next_temp_stack[second_pos[0]] ; 
-    int kp = 0 ; 
-    while (kp < second_counter ){
-        if( temp_key == second_alrm_node->primary_key[second_pos[kp]] ){
-            scnd_alrm = temp_key ; 
-            break ; 
-        }
-        kp++ ; 
-    }
-
-    if (the_next_one != NULL && the_next_one->num_of_children - 1 >= no_of_data / 2 ){ 
-        temp->children[temp->num_of_children] = the_next_one->children[0] ; 
-        temp->num_of_children++ ; 
-
-        num = the_next_one->num_of_children - 1   ; 
-        the_next_one->num_of_children-- ; 
-
-        for (int i = 0 ; i < num  ; i++ ) {
-            the_next_one->children[i] = the_next_one->children[i+1];
-        }
-
-        if (first_alrm >= 0 ){ 
-            int the_updated_mid = temp->primary_key[temp->num_of_leaf / 2] ;
-            int first_stuff = first_counter - first_alrm ; 
-            k = first_counter ;  
-            while (first_stuff > 0  ){
-                int m = ( temp_stack[ k-1 ]->num_of_leaf ) / 2 ; 
-                if (first_pos[ k-1 ] < temp_stack[ k-1 ]->num_of_leaf ){
-                    temp_stack[ k-1 ]->primary_key[ first_pos[ k-1 ] ] = the_updated_mid ; 
+            second_counter-- ; 
+            while (second_counter >= 0 && next_temp_stack[second_counter]->num_of_children <  no_of_data / 2 ){
+                for ( int i = 0 ; i < 32 ; i++ ){
+                    temp_stack[i] = next_temp_stack[i] ; 
+                    for_change[i] = for_second_change[i] ; 
+                    first_pos[i] = second_pos[i] ; 
                 }
-                the_updated_mid = temp_stack[ k -1  ]->primary_key[m]  ; 
-                k-- ;
-                first_stuff-- ; 
-            }
-        }
+                first_counter = second_counter ; 
 
-        if (scnd_alrm >= 0 ){                                         
-            int the_updated_mid = the_next_one->primary_key[the_next_one->num_of_leaf / 2] ;
-            int scnd_steps = second_counter - scnd_alrm ;
-            k = second_counter ;
-            while (scnd_steps > 0 ){
-                if (second_pos[ k-1 ] < next_temp_stack[ k-1 ]->num_of_leaf ){
-                    next_temp_stack[ k-1 ]->primary_key[ second_pos[ k-1 ] ] = the_updated_mid ;
+                temp = temp_stack[first_counter] ; 
+                int current_counter = first_counter - 1 ; 
+                while (first_pos[current_counter] + 1 >  temp_stack[current_counter]->num_of_children ){
+                    if (current_counter >= 0 ) {
+                        current_counter-- ; 
+                    }
+                    else { 
+                        break ; 
+                    }
                 }
-                the_updated_mid = next_temp_stack[ k-1 ]->primary_key[ next_temp_stack[ k-1 ]->num_of_leaf / 2 ] ;
-                k-- ;
-                scnd_steps-- ;
-            }
-        }
-
-        if (first_alrm >= 0 ){ 
-            int the_updated_mid = temp->primary_key[temp->num_of_leaf / 2] ;
-            int first_stuff = first_counter - first_alrm ; 
-            k = first_counter ;  
-            while (first_stuff > 0  ){
-                int m = ( temp_stack[ k-1 ]->num_of_leaf ) / 2 ; 
-                if (first_pos[ k-1 ] < temp_stack[ k-1 ]->num_of_leaf ){
-                    temp_stack[ k-1 ]->primary_key[ first_pos[ k-1 ] ] = the_updated_mid ; 
+                
+                internal_node * merger_node  = temp_stack[current_counter] ; 
+                int kj = 1 ; 
+                internal_node * the_next_one  = merger_node->children[first_pos[current_counter] + 1]  ; 
+                next_temp_stack[current_counter] = the_next_one ; 
+                second_pos[current_counter]++ ; 
+                while ( kj <= first_counter - current_counter ){
+                    second_pos[current_counter + kj ] = 0 ; 
+                    the_next_one = the_next_one->children[0] ; 
+                    next_temp_stack[current_counter + kj] = the_next_one ; 
+                    for_second_change[current_counter + kj ] = the_next_one->primary_key[0] ; 
+                    kj++  ; 
                 }
-                the_updated_mid = temp_stack[ k -1  ]->primary_key[m]  ; 
-                k-- ;
-                first_stuff-- ; 
-            }
-        }
-    }
+                internal_node * second_alrm_node = next_temp_stack[second_pos[0]] ; 
+                scnd_alrm = current_counter ; 
 
-}
+                if (the_next_one != NULL && the_next_one->num_of_children - 1 >= no_of_data / 2 ){ 
+                    temp->primary_key[temp->num_of_leaf] = temp->children[temp->num_of_children - 1]->primary_key[temp->children[temp->num_of_children - 1]->num_of_leaf / 2] ; 
+                    temp->num_of_leaf++ ; 
+                    temp->children[temp->num_of_children] = the_next_one->children[0] ; 
+                    temp->num_of_children++ ; 
+
+                    num = the_next_one->num_of_children - 1   ; 
+                    the_next_one->num_of_children-- ; 
+                    for (int i = 0 ; i < num  ; i++ ) {
+                        the_next_one->children[i] = the_next_one->children[i+1];
+                    }
+                    the_next_one->children[num] = NULL ; 
+                    for (int i = 0 ; i < the_next_one->num_of_leaf - 1 ; i++ ){
+                        the_next_one->primary_key[i] = the_next_one->primary_key[i+1] ; 
+                    }
+                    the_next_one->num_of_leaf-- ; 
+                    the_next_one->primary_key[the_next_one->num_of_leaf] = -1 ; 
+
+                    if (scnd_alrm >= 0 ){                                         
+                        int the_updated_mid = the_next_one->primary_key[the_next_one->num_of_leaf / 2] ;
+                        int scnd_steps = second_counter - scnd_alrm ;
+                        k = second_counter ;
+                        while (scnd_steps > 0 ){
+                            if (second_pos[ k-1 ] < next_temp_stack[ k-1 ]->num_of_leaf ){
+                                next_temp_stack[ k-1 ]->primary_key[ second_pos[ k-1 ] ] = the_updated_mid ;
+                            }
+                            the_updated_mid = next_temp_stack[ k-1 ]->primary_key[ next_temp_stack[ k-1 ]->num_of_leaf / 2 ] ;
+                            k-- ;
+                            scnd_steps-- ;
+                        }
+                    }
+                    break ; 
+                }
+
+                else {
+                    int i = 0 ; 
+                    int j = 0 ; 
+                    internal_node * the_merger_one = NULL ;
+                    int the_merger_num = -1 ; 
+                    while (1){
+                        if (i <= first_counter && j <= second_counter && temp_stack[i] != NULL && next_temp_stack[j] != NULL && temp_stack[i] == next_temp_stack[j]  ){
+                            the_merger_one = temp_stack[i] ;
+                            the_merger_num = i ; 
+                            i++ ; 
+                            j++ ; 
+                        }
+                        else {
+                            break ; 
+                        }
+                    }
+
+                    temp->primary_key[temp->num_of_leaf] = temp->children[temp->num_of_children - 1]->primary_key[temp->children[temp->num_of_children - 1]->num_of_leaf / 2] ; 
+                    temp->num_of_leaf++ ; 
+                    int for_change_counter = first_counter ; 
+                    for ( int s = 0 ; s < the_next_one->num_of_leaf ; s++ ){
+                        temp->primary_key[temp->num_of_leaf] = the_next_one->primary_key[s] ; 
+                        temp->num_of_leaf++ ; 
+                    }
+                    for ( int s = 0 ; s < the_next_one->num_of_data_pushed ; s++  ){
+                        temp->children[temp->num_of_data_pushed ] = the_next_one->children[s] ; 
+                        temp->num_of_children++ ; 
+                    }
+
+                    int lapoliza = first_counter -1 ; 
+                    int bit = 0 ; 
+                    int catch_which_to_put_as_parent = -1 ; 
+
+                    while (  temp_stack[lapoliza] != NULL  && lapoliza >= the_merger_num  ){
+                        if (first_pos[lapoliza] < temp_stack[lapoliza]->num_of_leaf ){  
+                            if (bit == 0 ){
+                                temp_stack[lapoliza]->primary_key[for_change[lapoliza]] =  temp->primary_key[temp->num_of_leaf / 2 ]  ; 
+                            }
+                            else{
+                                temp_stack[lapoliza]->primary_key[for_change[lapoliza]] =  temp_stack[lapoliza + 1]->primary_key[temp_stack[lapoliza + 1]->num_of_leaf / 2]  ; 
+                            }
+                        }
+                        bit = 1 ; 
+                        lapoliza-- ; 
+                    }
+
+                    int j = the_merger_num ; 
+                    internal_node * just_there ; 
+                    while ( j <  second_counter - 1){
+                        internal_node * for_the_func_temp ; 
+                        if (the_merger_one->children[second_pos[j+1]] == NULL ){
+                            return ; 
+                        }
+                        for_the_func_temp = the_merger_one->children[second_pos[j+1]]  ; 
+                        if (second_pos[j] < the_merger_one->num_of_leaf && second_pos[j + 1] < for_the_func_temp->num_of_leaf ){ 
+                            the_merger_one->primary_key[second_pos[j]] = for_the_func_temp->primary_key[second_pos[j + 1]] ;
+                        }   
+                        the_merger_one = for_the_func_temp ; 
+                        j++ ;
+                    }
+
+                    just_there = the_merger_one ; 
+                    int final_to_reach_index = second_pos[second_counter - 1] ; 
+                    if ( just_there->num_of_leaf  > 0 ){
+                        int index ; 
+                        if (final_to_reach_index < just_there->num_of_leaf ){
+                            index = final_to_reach_index; 
+                        }
+                        else { 
+                            index = final_to_reach_index - 1 ; 
+                        }
+
+                        for (int m = index ; m < just_there->num_of_leaf - 1 ; m++ ) {
+                            just_there->primary_key[m] = just_there->primary_key[m+1] ;
+                        }
+                        just_there->primary_key[just_there->num_of_leaf - 1 ] = -1 ; 
+
+                        for (int m = final_to_reach_index ; m < just_there->num_of_children  ; m++ ) {
+                            just_there->children[m] = just_there->children[m+1] ;
+                        }
+                        just_there->children[just_there->num_of_children] = NULL ;   
+                        just_there->num_of_leaf-- ;
+                        just_there->num_of_children-- ;   
+                    }
+                    if (final_to_reach_index < just_there->num_of_leaf && just_there->children[final_to_reach_index] != NULL  ){
+                        just_there->primary_key[p] = just_there->children[p]->primary_key[just_there->children[p]->num_of_leaf / 2] ; 
+                    }
+
+                    free(the_next_one) ;
+
+                    second_counter-- ; 
+                    if (next_temp_stack[second_counter]->num_of_children >=  no_of_data / 2 ){
+                        break ; 
+                    }
+                }
+
+
+            }
+                }
+
+
+            }
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
