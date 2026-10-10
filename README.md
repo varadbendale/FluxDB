@@ -1,5 +1,5 @@
-##NitrogenDB  
-A OLTP based Database system 
+## NitrogenDB
 
-Documentation can be accessed through :-
-https://nitrogendb.github.io/
+**An OLTP-Based Database System**
+
+Official documentation: https://nitrogendb.github.io/
